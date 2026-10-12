@@ -74,6 +74,9 @@ dialog textarea{width:100%;min-height:160px}
 @media (max-width:900px){.headSplit{flex-direction:column}}
 #guide ol{padding-left:20px;line-height:1.7}#guide li{margin:5px 0}
 footer.panel{text-align:center}
+.addCard{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;border-style:dashed;cursor:pointer;color:var(--mut)}
+.addCard:hover{border-color:var(--acc);color:var(--acc)}
+.addPlus{font-size:48px;line-height:1}
 .linkbtn{background:none;border:none;color:var(--acc);cursor:pointer;text-decoration:underline;font-size:14px;padding:0}
 .chnum{display:flex;gap:10px;margin-top:2px}.chnum label{font-size:11px;color:var(--mut)}.chnum input{width:84px}
 .tgl{font-weight:700;border-radius:20px;padding:4px 12px}
@@ -101,7 +104,6 @@ footer.panel{text-align:center}
 </div>
 <div class="row" style="margin-top:8px">
 <label class="mut">공통 분석 주기(ms) <input type="number" id="inInterval" value="500" min="50" max="10000" step="50" style="width:90px"></label>
-<button id="btnAdd">감지 카드 추가</button>
 <button id="btnExportAll">전체 설정 내보내기</button>
 <button id="btnImportAll">전체 설정 가져오기</button>
 <button id="btnResetAll" class="danger">전체 초기화</button>
@@ -310,7 +312,9 @@ $("btnHelp").onclick=()=>$("dlgHelp").showModal();
 $("footGuide").onclick=()=>$("dlgGuide").showModal();
 $("footPrivacy").onclick=()=>$("dlgPrivacy").showModal();
 $("footContact").onclick=()=>$("dlgContact").showModal();
-["dlgHelp","dlgGuide","dlgPrivacy","dlgContact"].forEach(id=>{const d=$(id);d.addEventListener("click",e=>{if(e.target===d)d.close();});});
+["dlgHelp","dlgGuide","dlgPrivacy","dlgContact"].forEach(id=>{const d=$(id);let down=null;
+d.addEventListener("mousedown",e=>{down=e.target;});
+d.addEventListener("click",e=>{if(e.target===d&&down===d)d.close();down=null;});});
 /* ============ TimerAlarm (카운트다운) ============ */
 const Timer={pending:1800,endAt:0,tickId:null,ringId:null,ringing:false,
 fmt(s){s=Math.max(0,Math.round(s));const h=(s/3600)|0,m=((s%3600)/60)|0,ss=s%60;
@@ -652,8 +656,8 @@ const rl=c.querySelector('[data-r="roiL"]'),rr=c.querySelector('[data-r="roiR"]'
 rl.append(roiRow(p,"x","X",fw),roiRow(p,"y","Y",fh));
 rr.append(roiRow(p,"w","W",fw),roiRow(p,"h","H",fh));
 const sg=c.querySelector('[data-r="setgrid"]');
-p.hsv.forEach((h,i)=>sg.append(hsvRow(p,h,i)));
 sg.append(etcCard(p));
+p.hsv.forEach((h,i)=>sg.append(hsvRow(p,h,i)));
 c.querySelector('[data-a="addHsv"]').onclick=()=>{p.hsv.push({hMin:0,hMax:360,sMin:0,sMax:1,vMin:0,vMax:1,color:maskColor(p.hsv.length)});saveSoon();buildCards(false);};
 c.querySelector('[data-a="freeze"]').onclick=()=>toggleFreeze(p);
 c.querySelector('[data-a="export"]').onclick=()=>exportPreset(p);
@@ -667,7 +671,10 @@ p.blendColors=[rc(),rc(),rc()];saveSoon();paintBlend(p);
 Logger.log("INFO","HSV","BLEND_COLOR","겹침색 변경(2·3·4+ 랜덤): "+p.name,{presetId:p.id,presetName:p.name});};
 paintBlend(p);
 if(Alarm.repeatTimers[p.id])c.classList.add("alarming");
-box.appendChild(c);}}
+box.appendChild(c);}
+const add=document.createElement("div");add.className="card addCard";
+add.innerHTML='<div class="addPlus">+</div><div class="mut">감지 카드 추가</div>';
+add.onclick=()=>addPreset();box.appendChild(add);}
 function refreshPresetCard(p){const c=$("card-"+p.id);if(!c){buildCards(false);return;}
 const badge=c.querySelector(".badge");if(badge){badge.textContent=p.state;badge.className="badge "+p.state;}updatePresetStats(p);}
 function updatePresetStats(p){const c=$("card-"+p.id);if(!c)return;
@@ -675,8 +682,8 @@ const q=s=>c.querySelector(`[data-s="${s}"]`);if(q("cur"))q("cur").textContent=p
 if(q("avg"))q("avg").textContent=p.avg;if(q("cont"))q("cont").textContent=p.cont+"/"+p.contTicks;
 const b=c.querySelector(".badge");if(b){b.textContent=p.state;b.className="badge "+p.state;}}
 function scrollToPreset(id){requestAnimationFrame(()=>{const c=$("card-"+id);if(c)c.scrollIntoView({behavior:"smooth",block:"start"});});}
-$("btnAdd").onclick=()=>{const p=defaultPreset();presets.push(p);saveSoon();buildCards(false);scrollToPreset(p.id);
-Logger.log("INFO","프리셋","PRESET_CREATE","프리셋 생성: "+p.name,{presetId:p.id,presetName:p.name});};
+function addPreset(){const p=defaultPreset();presets.push(p);saveSoon();buildCards(false);scrollToPreset(p.id);
+Logger.log("INFO","감지 카드","PRESET_CREATE","감지 카드 생성: "+p.name,{presetId:p.id,presetName:p.name});};
 /* ============ 화면 고정 ============ */
 function toggleFreeze(p){if(!p.frozen){if(!Cap.running||!Cap.frameW){alert("먼저 화면 공유를 시작하세요.");return;}
 const fc=document.createElement("canvas");fc.width=Cap.frameW;fc.height=Cap.frameH;
