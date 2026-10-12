@@ -143,46 +143,10 @@ footer.panel{text-align:center}
 </div>
 <div id="logList"></div>
 </section>
-<section class="panel" id="guide">
-  <h2>화면 색상 감지 알리미란?</h2>
-  <p>
-    화면 색상 감지 알리미는 크롬에서 공유한 화면의 특정 영역을 분석해
-    사용자가 지정한 HSV 색상 범위와 감지 조건에 맞는 변화가 나타나면
-    소리로 알려주는 브라우저 도구입니다.
-  </p>
-
-  <h2>사용 방법</h2>
-  <ol>
-    <li>화면 공유 시작 버튼을 누르고 감지할 화면이나 창을 선택합니다.</li>
-    <li>감지 카드 추가 버튼을 눌러 감지 영역을 설정합니다.</li>
-    <li>H는 색상, S는 채도, V는 명도 범위를 조정합니다.</li>
-    <li>임계값과 연속 감지 틱을 설정해 원하는 조건을 지정합니다.</li>
-    <li>오디오 활성화 버튼을 누른 뒤 감지가 작동하는지 테스트합니다.</li>
-  </ol>
-
-  <h2>HSV란 무엇인가요?</h2>
-  <p>
-    HSV는 색상을 색상각도(Hue), 채도(Saturation), 명도(Value)로
-    표현하는 방식입니다. 이 도구에서는 H 범위를 0~360도로,
-    S와 V 범위를 0~100%에 해당하는 값으로 조정할 수 있습니다.
-  </p>
-
-  <h2>개인정보 및 화면 공유</h2>
-  <p>
-    이 도구는 브라우저에서 화면 프레임을 분석하도록 작성되어 있습니다.
-    화면 공유는 사용자가 직접 선택하고 허용해야 합니다.
-    브라우저를 닫거나 공유를 중지하면 화면 감지가 중단됩니다.
-  </p>
-  <p>
-    광고 서비스를 이용하는 경우 광고 제공자가 쿠키 또는 유사한 기술을
-    사용할 수 있습니다. 실제 데이터 처리 방식과 광고 서비스 사용 여부에
-    맞춰 개인정보 처리 안내를 확인해 주세요.
-  </p>
-</section>
 </main>
 <footer class="panel">
   <p>Screen Alarm (화면 감지 알리미) — 브라우저 기반 HSV 색상 감지 도구</p>
-  <a href="#guide">사용 방법 및 개인정보 안내</a> | <button class="linkbtn" id="footPrivacy">개인정보처리방침</button> | <button class="linkbtn" id="footContact">문의하기</button>
+  <button class="linkbtn" id="footGuide">사용 방법 및 개인정보 안내</button> | <button class="linkbtn" id="footPrivacy">개인정보처리방침</button> | <button class="linkbtn" id="footContact">문의하기</button>
 </footer>
 <dialog id="dlg"><h3 id="dlgTitle"></h3><textarea id="dlgText"></textarea><div class="row" style="margin-top:8px"><button id="dlgOk" class="primary">저장</button><button id="dlgCopy">복사</button><button id="dlgClose">닫기</button></div><div class="mut" id="dlgMsg"></div></dialog>
 <dialog id="dlgHelp"><h3>사용방법</h3>
@@ -211,7 +175,23 @@ footer.panel{text-align:center}
 <li><b>오디오 활성화</b>를 한 번 눌러두면 브라우저 정책과 무관하게 알람이 정상 재생됩니다.</li>
 </ol>
 <div class="mut">설정은 자동 저장됩니다.</div>
-<div class="row" style="margin-top:8px"><button id="dlgHelpClose" class="primary">닫기</button></div></dialog>
+</dialog>
+<dialog id="dlgGuide">
+  <h3>화면 색상 감지 알리미란?</h3>
+  <p>화면 색상 감지 알리미는 크롬에서 공유한 화면의 특정 영역을 분석해 사용자가 지정한 HSV 색상 범위와 감지 조건에 맞는 변화가 나타나면 소리로 알려주는 브라우저 도구입니다.</p>
+  <h3>사용 방법</h3>
+  <ol>
+    <li>화면 공유 시작 버튼을 누르고 감지할 화면이나 창을 선택합니다.</li>
+    <li>감지 카드 추가 버튼을 눌러 감지 영역을 설정합니다.</li>
+    <li>H는 색상, S는 채도, V는 명도 범위를 조정합니다.</li>
+    <li>임계값과 연속 감지 틱을 설정해 원하는 조건을 지정합니다.</li>
+    <li>오디오 활성화 버튼을 누른 뒤 감지가 작동하는지 테스트합니다.</li>
+  </ol>
+  <h3>HSV란 무엇인가요?</h3>
+  <p>HSV는 색상을 색상각도(Hue), 채도(Saturation), 명도(Value)로 표현하는 방식입니다. 이 도구에서는 H 범위를 0~360도로, S와 V 범위를 0~100%에 해당하는 값으로 조정할 수 있습니다.</p>
+  <h3>개인정보 및 화면 공유</h3>
+  <p>이 도구는 브라우저에서 화면 프레임을 분석하도록 작성되어 있습니다. 화면 공유는 사용자가 직접 선택하고 허용해야 합니다. 브라우저를 닫거나 공유를 중지하면 화면 감지가 중단됩니다.</p>
+  <p>광고 서비스를 이용하는 경우 광고 제공자가 쿠키 또는 유사한 기술을 사용할 수 있습니다. 실제 데이터 처리 방식과 광고 서비스 사용 여부에 맞춰 개인정보 처리 안내를 확인해 주세요.</p></dialog>
 <dialog id="dlgPrivacy"><h3>개인정보처리방침</h3>
 <p class="mut">최종 업데이트: 2026년 10월 13일</p>
 <p>Screen Alarm (화면 감지 알리미)은 화면 색상 감지 도구를 제공하며, Google AdSense를 통해 광고를 표시할 수 있습니다.</p>
@@ -225,12 +205,12 @@ footer.panel{text-align:center}
 <p>사이트는 Cloudflare 등의 서비스를 이용합니다. 서비스 제공 과정에서 IP 주소 및 접속 관련 정보가 처리될 수 있습니다.</p>
 <h3>문의</h3>
 <p>개인정보 관련 문의는 아래 이메일로 연락해 주세요.<br>이메일: jelee9120@gmail.com</p>
-<div class="row" style="margin-top:8px"><button id="dlgPrivacyClose" class="primary">닫기</button></div></dialog>
+</dialog>
 <dialog id="dlgContact"><h3>문의하기</h3>
 <p>Screen Alarm 이용 중 오류나 불편 사항이 있거나 문의할 내용이 있다면 아래 이메일로 연락해 주세요.</p>
 <p><b>이메일:</b> jelee9120@gmail.com</p>
 <p class="mut">© 2026 Screen Alarm</p>
-<div class="row" style="margin-top:8px"><button id="dlgContactClose" class="primary">닫기</button></div></dialog>
+</dialog>
 <video id="hiddenV" style="display:none" autoplay muted playsinline></video>
 <canvas id="capCanvas" style="display:none"></canvas>
 <script>
@@ -327,11 +307,10 @@ stopAll(){Object.keys(this.repeatTimers).forEach(k=>this.stopRepeat(k));Object.k
 if(this.ctx){try{this.ctx.close();}catch(e){}this.ctx=null;}}};
 $("btnAudio").onclick=()=>{if(Alarm.ensure()){alert("오디오가 활성화되었습니다.");Logger.log("INFO","알람","ALARM_ENABLED","사용자 클릭으로 오디오 활성화");}};
 $("btnHelp").onclick=()=>$("dlgHelp").showModal();
-$("dlgHelpClose").onclick=()=>$("dlgHelp").close();
+$("footGuide").onclick=()=>$("dlgGuide").showModal();
 $("footPrivacy").onclick=()=>$("dlgPrivacy").showModal();
-$("dlgPrivacyClose").onclick=()=>$("dlgPrivacy").close();
 $("footContact").onclick=()=>$("dlgContact").showModal();
-$("dlgContactClose").onclick=()=>$("dlgContact").close();
+["dlgHelp","dlgGuide","dlgPrivacy","dlgContact"].forEach(id=>{const d=$(id);d.addEventListener("click",e=>{if(e.target===d)d.close();});});
 /* ============ TimerAlarm (카운트다운) ============ */
 const Timer={pending:1800,endAt:0,tickId:null,ringId:null,ringing:false,
 fmt(s){s=Math.max(0,Math.round(s));const h=(s/3600)|0,m=((s%3600)/60)|0,ss=s%60;
