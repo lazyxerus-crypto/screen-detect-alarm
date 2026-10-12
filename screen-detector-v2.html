@@ -3,13 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>화면 감지 알리미</title>
+<title>화면 색상 감지 알리미 - HSV 범위 감지 및 소리 알람</title>
+<meta name="description" content="크롬 화면 공유를 이용해 원하는 HSV 색상 범위를 실시간 감지하고, 조건에 맞는 색상이 나타나면 소리로 알려주는 무료 브라우저 도구입니다.">
+<meta name="robots" content="index,follow">
 <meta name="theme-color" content="#121418">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='2' width='60' height='60' rx='12' fill='%231a1e24' stroke='%232c3542' stroke-width='2'/%3E%3Crect x='14' y='18' width='36' height='26' rx='2' fill='none' stroke='%234da3ff' stroke-width='3'/%3E%3Ccircle cx='26' cy='30' r='6' fill='%23ff2d2d'/%3E%3Ccircle cx='38' cy='32' r='5' fill='%2300e5cc'/%3E%3Ccircle cx='50' cy='12' r='4' fill='%233ddc84'/%3E%3C/svg%3E">
 <style>
 :root{--bg:#121418;--bg2:#1a1e24;--card:#1e242e;--line:#2c3542;--txt:#e8ecf1;--mut:#9aa6b5;--acc:#4da3ff;--ok:#3ddc84;--warn:#ffb020;--err:#ff5c5c;}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:"Malgun Gothic",system-ui,sans-serif;font-size:14px}
-header{position:sticky;top:0;z-index:10;background:var(--bg2);border-bottom:1px solid var(--line);padding:10px 14px}
+header{background:var(--bg2);border-bottom:1px solid var(--line);padding:10px 14px}
 h1{font-size:17px;margin:0 0 8px}h2{font-size:15px;margin:18px 0 8px}h3{font-size:13px;margin:10px 0 6px;color:var(--mut)}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 button{background:#2a3340;color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:13px}
@@ -25,11 +27,11 @@ main{padding:12px 14px 60px;max-width:1280px;margin:0 auto}
 #originOverlay{position:absolute;left:0;top:0;pointer-events:none}
 .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:12px;font-weight:700}
 .on{background:#0d4429;color:#4be08a}.off{background:#333d49;color:var(--mut)}
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(520px,1fr));gap:12px;margin-bottom:18px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:12px;margin-bottom:18px}
 .cardGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 14px}
 .cardGrid .roiGrid{grid-template-columns:1fr}
 @media (max-width:640px){.cardGrid{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;scroll-margin-top:150px;container-type:inline-size;container-name:pcard}
 .card.frozen{border-color:var(--warn)}
 @keyframes alarmPulse{0%,100%{box-shadow:0 0 0 2px var(--err),0 0 12px 2px rgba(255,60,60,.55);}50%{box-shadow:0 0 0 3px #ff9090,0 0 26px 8px rgba(255,60,60,.85);}}
 .card.alarming{border-color:var(--err);animation:alarmPulse .7s ease-in-out infinite;}
@@ -52,6 +54,8 @@ main{padding:12px 14px 60px;max-width:1280px;margin:0 auto}
 #logList{max-height:300px;overflow:auto;background:#0c0f13;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px}
 .log{border-bottom:1px solid #1c232e;padding:4px 2px;white-space:pre-wrap;word-break:break-all}
 .log.DEBUG{color:#8b98a9}.log.INFO{color:#cfe0f5}.log.WARN{color:var(--warn)}.log.ERROR{color:var(--err)}
+#dlgHelp{line-height:1.7}#dlgHelp li{margin:5px 0}#dlgHelp ol,#dlgHelp ul{padding-left:20px;margin:6px 0}
+
 dialog{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:10px;max-width:640px;width:92vw}
 dialog textarea{width:100%;min-height:160px}
 .kv{display:flex;gap:8px;align-items:center;margin:4px 0;flex-wrap:wrap}
@@ -64,22 +68,31 @@ dialog textarea{width:100%;min-height:160px}
 .dual input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:auto;width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--acc);cursor:pointer}
 .dual input[type=range]::-moz-range-track{background:transparent}
 .dual input[type=range]::-moz-range-thumb{pointer-events:auto;width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid var(--acc);cursor:pointer}
+#adTop{flex:400;min-width:0;min-height:120px;border:1px dashed var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#0c0f13 url("Gemini_Generated_Image_p2r5p1p2r5p1p2r5.png") center/auto 100% no-repeat}
+.headSplit{display:flex;gap:14px;align-items:stretch}
+.headLeft{flex:900;min-width:0}
+@media (max-width:900px){.headSplit{flex-direction:column}}
+#guide ol{padding-left:20px;line-height:1.7}#guide li{margin:5px 0}
+footer.panel{text-align:center}
 .chnum{display:flex;gap:10px;margin-top:2px}.chnum label{font-size:11px;color:var(--mut)}.chnum input{width:84px}
 .tgl{font-weight:700;border-radius:20px;padding:4px 12px}
 .tgl.on{background:#0d4429;color:#4be08a;border-color:#1f7a48}
 .tgl.off{background:#4a1616;color:#ff8080;border-color:#7a2b2b}
 .roi2col{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 14px}
 .setGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:8px}
-@media (max-width:640px){.cardGrid{grid-template-columns:1fr}.roi2col{grid-template-columns:1fr}.setGrid{grid-template-columns:1fr}}
+@container pcard (max-width:620px){.cardGrid{grid-template-columns:1fr}}
+@container pcard (max-width:380px){.roi2col{grid-template-columns:1fr}.setGrid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <header>
 <h1><svg width="22" height="22" viewBox="0 0 64 64" style="vertical-align:-4px"><rect x="2" y="2" width="60" height="60" rx="12" fill="#1a1e24" stroke="#2c3542" stroke-width="2"/><rect x="14" y="18" width="36" height="26" rx="2" fill="none" stroke="#4da3ff" stroke-width="3"/><circle cx="26" cy="30" r="6" fill="#ff2d2d"/><circle cx="38" cy="32" r="5" fill="#00e5cc"/><circle cx="50" cy="12" r="4" fill="#3ddc84"/></svg> 화면 감지 알리미</h1>
+<div class="headSplit"><div class="headLeft">
 <div class="row">
 <button id="btnShare" class="primary">화면 공유 시작</button>
 <button id="btnStopShare">공유 중지</button>
 <button id="btnAudio">오디오 활성화 (클릭)</button>
+<button id="btnHelp">사용방법</button>
 <span class="mut">실제 해상도: <b id="resLabel" class="mono">-</b></span>
 <span class="mut">분석틱: <b id="tickLabel" class="mono">0</b></span>
 <span class="mut">분석시간: <b id="perfLabel" class="mono">-</b></span>
@@ -87,19 +100,33 @@ dialog textarea{width:100%;min-height:160px}
 </div>
 <div class="row" style="margin-top:8px">
 <label class="mut">공통 분석 주기(ms) <input type="number" id="inInterval" value="500" min="50" max="10000" step="50" style="width:90px"></label>
-<button id="btnAdd">프리셋 추가</button>
+<button id="btnAdd">감지 카드 추가</button>
 <button id="btnExportAll">전체 설정 내보내기</button>
 <button id="btnImportAll">전체 설정 가져오기</button>
 <button id="btnResetAll" class="danger">전체 초기화</button>
 </div>
+<div class="row" style="margin-top:8px">
+<span class="mut">화면 크기</span>
+<button class="mini" id="btnUiMinus">작게</button><button class="mini" id="btnUiPct" style="min-width:56px">100%</button><button class="mini" id="btnUiPlus">크게</button>
+</div>
+<div class="row" style="margin-top:8px">
+<button id="btnTimer" class="primary">30분 알람</button>
+<b id="timerLabel" class="mono" style="font-size:22px;min-width:96px">30:00</b>
+<button class="mini" data-t="-600">-10분</button><button class="mini" data-t="-60">-1분</button><button class="mini" data-t="-10">-10초</button>
+<button class="mini" data-t="10">+10초</button><button class="mini" data-t="60">+1분</button><button class="mini" data-t="600">+10분</button>
+<select id="timerSound"><option value="11">T1 팡파레</option><option value="12">T2 자명종</option><option value="13">T3 징</option><option value="14">T4 삐뽀</option><option value="15">T5 종료차임</option></select>
+</div>
+</div>
+<div id="adTop"><div id="adSlot"><!-- 여기에 광고 코드를 붙여넣으세요 --></div></div>
+</div>
 </header>
 <main>
 <section class="panel">
-<h2>A. 전체 원본 공유 화면 (ROI 테두리만 표시)</h2>
-<div id="originWrap"><video id="originVideo" autoplay muted playsinline></video><canvas id="originOverlay"></canvas></div>
+<h2 style="display:flex;justify-content:space-between;align-items:center">A. 전체 원본 공유 화면 (감지 영역 테두리만 표시)<button class="mini" id="btnFoldOrigin">접기</button></h2>
+<div id="originBody"><div id="originWrap"><video id="originVideo" autoplay muted playsinline></video><canvas id="originOverlay"></canvas></div></div>
 </section>
 <section>
-<h2>B. 각 프리셋 개별 화면 (ROI + 불투명 HSV 마스크)</h2>
+<h2>B. 각 감지 카드 개별 화면 (감지 영역 + 불투명 감지 색상 범위 마스크)</h2>
 <div class="row" style="margin:6px 0"><label class="mut">미리보기 최대 크기(px) <input type="number" id="inPvMax" value="320" min="80" max="1080" step="10" style="width:80px"></label><span class="mut">긴 변이 이 값을 넘으면 미리보기만 축소 표시(감지 계산은 원본 해상도 그대로)</span></div>
 <div id="cards" class="cards"></div>
 </section>
@@ -115,8 +142,75 @@ dialog textarea{width:100%;min-height:160px}
 </div>
 <div id="logList"></div>
 </section>
+<section class="panel" id="guide">
+  <h2>화면 색상 감지 알리미란?</h2>
+  <p>
+    화면 색상 감지 알리미는 크롬에서 공유한 화면의 특정 영역을 분석해
+    사용자가 지정한 HSV 색상 범위와 감지 조건에 맞는 변화가 나타나면
+    소리로 알려주는 브라우저 도구입니다.
+  </p>
+
+  <h2>사용 방법</h2>
+  <ol>
+    <li>화면 공유 시작 버튼을 누르고 감지할 화면이나 창을 선택합니다.</li>
+    <li>감지 카드 추가 버튼을 눌러 감지 영역을 설정합니다.</li>
+    <li>H는 색상, S는 채도, V는 명도 범위를 조정합니다.</li>
+    <li>임계값과 연속 감지 틱을 설정해 원하는 조건을 지정합니다.</li>
+    <li>오디오 활성화 버튼을 누른 뒤 감지가 작동하는지 테스트합니다.</li>
+  </ol>
+
+  <h2>HSV란 무엇인가요?</h2>
+  <p>
+    HSV는 색상을 색상각도(Hue), 채도(Saturation), 명도(Value)로
+    표현하는 방식입니다. 이 도구에서는 H 범위를 0~360도로,
+    S와 V 범위를 0~100%에 해당하는 값으로 조정할 수 있습니다.
+  </p>
+
+  <h2>개인정보 및 화면 공유</h2>
+  <p>
+    이 도구는 브라우저에서 화면 프레임을 분석하도록 작성되어 있습니다.
+    화면 공유는 사용자가 직접 선택하고 허용해야 합니다.
+    브라우저를 닫거나 공유를 중지하면 화면 감지가 중단됩니다.
+  </p>
+  <p>
+    광고 서비스를 이용하는 경우 광고 제공자가 쿠키 또는 유사한 기술을
+    사용할 수 있습니다. 실제 데이터 처리 방식과 광고 서비스 사용 여부에
+    맞춰 개인정보 처리 안내를 확인해 주세요.
+  </p>
+</section>
 </main>
+<footer class="panel">
+  <p>화면 감지 알리미 — 브라우저 기반 HSV 색상 감지 도구</p>
+  <a href="#guide">사용 방법 및 개인정보 안내</a>
+</footer>
 <dialog id="dlg"><h3 id="dlgTitle"></h3><textarea id="dlgText"></textarea><div class="row" style="margin-top:8px"><button id="dlgOk" class="primary">저장</button><button id="dlgCopy">복사</button><button id="dlgClose">닫기</button></div><div class="mut" id="dlgMsg"></div></dialog>
+<dialog id="dlgHelp"><h3>사용방법</h3>
+<ol>
+<li><b>화면 공유 시작</b>을 눌러 감시할 화면을 공유합니다.</li>
+<li><b>감지 카드 추가</b>로 감지 카드를 만듭니다. 카드 상단의 활성화/비활성화 토글로 분석 대상을 켜고 끕니다.</li>
+<li><b>감지 영역</b>을 지정합니다 (X·Y 왼쪽, W·H 오른쪽).</li>
+<li><b>감지 색상 범위</b>에서 찾을 색 범위를 지정합니다.</li>
+<li><b>감지조건</b>
+<ul>
+<li>① 평균 틱: 최근 N틱의 감지값을 평균냅니다. 1이면 그 틱의 값 그대로 사용합니다.</li>
+<li>② 임계값 범위: 평균값이 최소~최대 안에 들어야 조건을 만족합니다.</li>
+<li>③ 연속 틱: 조건을 연속 N틱 만족해야 감지 ON이 됩니다. 한 틱이라도 벗어나면 즉시 OFF됩니다.</li>
+<li>④ 알람 지연: ON이 된 뒤 N초 후에 알람이 울립니다. 기다리는 동안 감지가 꺼져도 예약된 알람은 울립니다.</li>
+<li>⑤ 계산 방식: 군집(위아래방향만)은 상하좌우로 이어진 덩어리 중 가장 큰 것, 군집(대각선방향포함)은 대각선까지 포함한 덩어리 중 가장 큰 것, 전체픽셀은 조건에 맞는 픽셀 전부 개수를 감지값으로 씁니다.</li>
+</ul></li>
+<li><b>알람</b>
+<ul>
+<li>ON 전환시: 감지가 시작될 때 울립니다. 지연 시간이 있으면 그만큼 기다렸다 울리고, 감지가 계속되면 2.5초 간격으로 반복됩니다.</li>
+<li>OFF 전환시: 감지가 끝날 때 즉시 1번만 울립니다.</li>
+<li>ON OFF 둘다: 시작과 종료 모두 울립니다.</li>
+<li>끄기: 알람을 사용하지 않습니다.</li>
+</ul></li>
+<li><b>화면 고정</b>으로 화면을 캡쳐해서 분석할 수 있습니다.</li>
+<li><b>감지 카드 내보내기</b>는 클립보드에 복사, <b>감지 카드 가져오기</b>에 붙여넣으면 새 감지 카드가 추가됩니다.</li>
+<li><b>오디오 활성화</b>를 한 번 눌러두면 브라우저 정책과 무관하게 알람이 정상 재생됩니다.</li>
+</ol>
+<div class="mut">설정은 자동 저장됩니다.</div>
+<div class="row" style="margin-top:8px"><button id="dlgHelpClose" class="primary">닫기</button></div></dialog>
 <video id="hiddenV" style="display:none" autoplay muted playsinline></video>
 <canvas id="capCanvas" style="display:none"></canvas>
 <script>
@@ -168,7 +262,7 @@ sweep(f0,f1,t0,dur,type,vol){const c=this.ctx,o=c.createOscillator(),g=c.createG
 o.frequency.setValueAtTime(f0,t0);o.frequency.linearRampToValueAtTime(f1,t0+dur);
 g.gain.setValueAtTime(0.0001,t0);g.gain.exponentialRampToValueAtTime(vol||.25,t0+.03);g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
 o.connect(g);g.connect(c.destination);o.start(t0);o.stop(t0+dur+.05);},
-play(idx){if(!this.ensure())return;const c=this.ctx,t=c.currentTime+0.02,i=clamp(Math.round(idx)||1,1,10);
+play(idx){if(!this.ensure())return;const c=this.ctx,t=c.currentTime+0.02,i=clamp(Math.round(idx)||1,1,15);
 const T=(f,dt,dur,type,v)=>this.tone(f,t+dt,dur,type,v);
 const S=(f0,f1,dt,dur,type)=>this.sweep(f0,f1,t+dt,dur,type);
 switch(i){
@@ -181,7 +275,12 @@ case 6:S(300,1200,0,.9,"sawtooth");break; // 상승 sweep
 case 7:[[0,.09],[.15,.09],[.3,.09],[.5,.3],[.85,.3],[1.2,.3],[1.65,.09],[1.8,.09],[1.95,.09]].forEach(([dt,du])=>T(700,dt,du,"sine"));break; // SOS 모스
 case 8:for(let k=0;k<4;k++)T(k%2?880:660,k*.3,.25,"triangle");break; // 이중음 교대
 case 9:for(let k=0;k<4;k++){T(940,k*.4,.18,"sine");T(1180,k*.4,.18,"sine");}break; // 전화벨(2주파수 동시)
-default:[659,784,880,784,1047].forEach((f,k)=>T(f,k*.14,.16,"triangle"));break;} // 멜로디
+case 10:[659,784,880,784,1047].forEach((f,k)=>T(f,k*.14,.16,"triangle"));break; // 멜로디
+case 11:[523,659,784,1047].forEach((f,k)=>T(f,k*.12,.2,"sawtooth"));break; // 팡파레
+case 12:for(let k=0;k<20;k++)T(2000,k*.09,.05,"sine",.18);break; // 자명종
+case 13:T(180,0,1.5,"sine",.3);T(270,0,1.2,"sine",.2);T(360,0,1.0,"sine",.15);break; // 징
+case 14:for(let k=0;k<3;k++){T(700,k*.8,.38,"triangle");T(950,k*.8+.4,.38,"triangle");}break; // 삐뽀
+default:[1047,880,784,659].forEach((f,k)=>T(f,k*.18,.25,"sine"));break;} // 종료차임
 Logger.log("DEBUG","알람","ALARM_PREVIEW","알람 미리듣기 재생",{settings:{alarmType:i}});},
 notify(preset,edge){ // ON 감지 시 트리거 래치 → 지연 후 무조건 1회 재생 → 트리거 OFF. 대기 중 재감지는 무시
 if(edge==="OFF")this.stopRepeat(preset.id);
@@ -207,6 +306,36 @@ stopRepeat(id){if(this.repeatTimers[id]){clearInterval(this.repeatTimers[id]);de
 stopAll(){Object.keys(this.repeatTimers).forEach(k=>this.stopRepeat(k));Object.keys(this.delayTimers).forEach(k=>this.clearDelay(k));
 if(this.ctx){try{this.ctx.close();}catch(e){}this.ctx=null;}}};
 $("btnAudio").onclick=()=>{if(Alarm.ensure()){alert("오디오가 활성화되었습니다.");Logger.log("INFO","알람","ALARM_ENABLED","사용자 클릭으로 오디오 활성화");}};
+$("btnHelp").onclick=()=>$("dlgHelp").showModal();
+$("dlgHelpClose").onclick=()=>$("dlgHelp").close();
+/* ============ TimerAlarm (카운트다운) ============ */
+const Timer={pending:1800,endAt:0,tickId:null,ringId:null,ringing:false,
+fmt(s){s=Math.max(0,Math.round(s));const h=(s/3600)|0,m=((s%3600)/60)|0,ss=s%60;
+const p2=n=>String(n).padStart(2,"0");return(h?h+":"+p2(m):p2(m))+":"+p2(ss);},
+left(){return this.tickId?(this.endAt-Date.now())/1000:this.pending;},
+render(){$("timerLabel").textContent=this.fmt(this.left());
+$("btnTimer").textContent=this.ringing?"알람 정지":(this.tickId?"타이머 취소":"30분 알람");},
+start(){this.stopRing();this.endAt=Date.now()+this.pending*1000;
+clearInterval(this.tickId);this.tickId=setInterval(()=>this.tick(),250);this.tick();
+Logger.log("INFO","타이머","TIMER_START","타이머 시작: "+this.fmt(this.pending),{});},
+adjust(d){if(this.ringing)return;
+if(this.tickId){this.endAt+=d*1000;if(this.endAt<=Date.now())this.fire();}else this.pending=clamp(this.pending+d,0,86399);
+this.render();},
+tick(){if((this.endAt-Date.now())<=0)this.fire();this.render();},
+tsound(){return+($("timerSound")?$("timerSound").value:11);},
+fire(){clearInterval(this.tickId);this.tickId=null;this.pending=1800;
+this.ringing=true;Alarm.play(this.tsound());clearInterval(this.ringId);
+this.ringId=setInterval(()=>Alarm.play(this.tsound()),3000);
+this.render();Logger.log("INFO","타이머","TIMER_FIRE","타이머 종료, 알람 반복 재생",{settings:{sound:this.tsound()}});},
+stop(){clearInterval(this.tickId);this.tickId=null;this.stopRing();this.pending=1800;this.render();
+Logger.log("INFO","타이머","TIMER_CANCEL","타이머 취소",{});},
+stopRing(){clearInterval(this.ringId);this.ringId=null;this.ringing=false;},
+toggle(){if(this.ringing){this.stopRing();this.pending=1800;this.render();}
+else if(this.tickId)this.stop();else this.start();}};
+$("btnTimer").onclick=()=>Timer.toggle();
+$("timerSound").onchange=e=>Alarm.play(+e.target.value);
+document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>Timer.adjust(+b.dataset.t));
+Timer.render();
 /* ============ HSVProcessor ============ */
 function rgb2hsv(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;
 let h=0;if(d!==0){if(mx===r)h=60*(((g-b)/d)%6);else if(mx===g)h=60*((b-r)/d+2);else h=60*((r-g)/d+4);}
@@ -239,19 +368,19 @@ return best;}
 /* ============ PresetManager / StorageManager ============ */
 const DEF_HSV=()=>({hMin:155,hMax:203,sMin:.41,sMax:.74,vMin:.43,vMax:.68,color:"#ff2d2d"});
 const SCHEMA=1,LSKEY="screenDetector.v1";
-let presets=[],common={interval:500,pvMax:320};
-function defaultPreset(name){return{id:uid("preset"),name:name||("프리셋 "+(presets.length+1)),enabled:true,
+let presets=[],common={interval:500,pvMax:320,uiScale:1};
+function defaultPreset(name){return{id:uid("preset"),name:name||("감지 카드 "+(presets.length+1)),enabled:true,
 roi:{x:0,y:0,w:320,h:240},hsv:[DEF_HSV()],avgTicks:1,thMin:100,thMax:200,contTicks:1,alarmDelay:0,blendColors:null,calcMode:"c8",
 state:"OFF",avg:0,cur:0,cont:0,hist:[],alarmEdge:"on",alarmType:1,repeat:false,frozen:false,frozenCanvas:null};}
 function serializePreset(p){return{v:SCHEMA,kind:"preset",preset:{id:p.id,name:p.name,enabled:p.enabled,roi:p.roi,hsv:p.hsv.map(h=>({...h})),avgTicks:p.avgTicks,thMin:p.thMin,thMax:p.thMax,contTicks:p.contTicks,alarmDelay:(p.alarmDelay||0),calcMode:p.calcMode||"c8",blendColors:p.blendColors||null,alarmEdge:p.alarmEdge,alarmType:p.alarmType,repeat:p.repeat}};}
 function validatePresetObj(o){const errs=[];
 if(!o||typeof o!=="object")return["최상위 객체가 아님"];
 const p=o.kind==="preset"?o.preset:o;
-if(!p)return["preset 필드 없음"];
+if(!p)return["감지 카드 필드 없음"];
 if(typeof p.name!=="string"||!p.name.trim())errs.push("name 문자열 필요");
 const r=p.roi||{};["x","y","w","h"].forEach(k=>{if(!Number.isFinite(+r[k]))errs.push("roi."+k+" 숫자 필요");});
 if(!(r.w>0&&r.h>0))errs.push("roi w/h는 1 이상");
-if(!Array.isArray(p.hsv)||!p.hsv.length)errs.push("hsv 1개 이상 필요");
+if(!Array.isArray(p.hsv)||!p.hsv.length)errs.push("감지 색상 1개 이상 필요");
 (p.hsv||[]).forEach((h,i)=>{["hMin","hMax","sMin","sMax","vMin","vMax"].forEach(k=>{if(!Number.isFinite(+h[k]))errs.push("hsv["+i+"]."+k+" 숫자 필요");});
 if(h.sMin<0||h.sMax>1||h.vMin<0||h.vMax>1)errs.push("hsv["+i+"] S/V는 0~1 범위");});
 if(!(p.avgTicks>=1&&p.avgTicks<=60))errs.push("avgTicks 1~60");
@@ -278,6 +407,7 @@ function loadSaved(){try{const t=localStorage.getItem(LSKEY);if(!t)return false;
 const d=JSON.parse(t);if(d.v!==SCHEMA){Logger.log("WARN","저장","STORAGE_VERSION_MISMATCH","스키마 버전 불일치",{actual:"v="+d.v,suggestedAction:"기본값으로 시작"});return false;}
 common.interval=clamp(+d.common?.interval||500,50,10000);$("inInterval").value=common.interval;
 common.pvMax=clamp(+d.common?.pvMax||320,80,1080);$("inPvMax").value=common.pvMax;
+common.uiScale=clamp(+d.common?.uiScale||1,0.5,1.5);
 presets=(d.presets||[]).map(p=>{const errs=validatePresetObj({kind:"preset",preset:p});
 if(errs.length){Logger.log("WARN","저장","STORAGE_PRESET_SKIP","저장된 프리셋 건너뜀: "+errs.join(";"),{});return null;}
 const n=presetFromObj({kind:"preset",preset:p});return n;}).filter(Boolean);
@@ -315,6 +445,7 @@ c.drawImage(this.video,0,0);return c;}catch(e){
 Logger.log("ERROR","캡처","CAPTURE_GRAB_FAIL","프레임 캡처 실패",{actual:String(e)});return null;}},
 restartLoop(){clearInterval(this.loopId);this.loopId=setInterval(()=>Analysis.tick(),common.interval);}};
 $("btnShare").onclick=()=>Cap.start();
+$("btnFoldOrigin").onclick=()=>{const b=$("originBody");const hide=b.style.display!=="none";b.style.display=hide?"none":"";$("btnFoldOrigin").textContent=hide?"펼치기":"접기";};
 $("btnStopShare").onclick=()=>Cap.stop("사용자 중지");
 $("inInterval").onchange=e=>{common.interval=clamp(+e.target.value||500,50,10000);e.target.value=common.interval;
 Cap.restartLoop();saveSoon();Logger.log("INFO","감지","CONFIG_INTERVAL","공통 분석 주기 변경: "+common.interval+"ms",{settings:{interval:common.interval}});};
@@ -381,7 +512,7 @@ const nx=clamp(r.x,0,FW-1),ny=clamp(r.y,0,FH-1);
 const nw=clamp(r.w,1,FW-nx),nh=clamp(r.h,1,FH-ny);
 if(nx!==r.x||ny!==r.y||nw!==r.w||nh!==r.h){p.roi={x:nx,y:ny,w:nw,h:nh};changed=true;
 Logger.log("WARN","ROI","ROI_CLAMPED","해상도 변경으로 ROI 제한: "+p.name,{presetId:p.id,presetName:p.name,frame:{width:FW,height:FH},roi:{...p.roi}});}}
-if(changed){presets.forEach(refreshPresetCard);saveSoon();alert("해상도 변경으로 일부 ROI가 유효 범위로 제한되었습니다.");}}
+if(changed){presets.forEach(refreshPresetCard);saveSoon();alert("해상도 변경으로 일부 감지 영역이 유효 범위로 제한되었습니다.");}}
 /* ============ PreviewRenderer ============ */
 function sizeOverlay(){const v=$("originVideo"),c=$("originOverlay");
 const r=v.getBoundingClientRect();c.width=Math.max(2,r.width);c.height=Math.max(2,r.height);
@@ -403,7 +534,7 @@ const maxSide=common.pvMax||320;
 const sc=Math.min(1,maxSide/Math.max(W,H));
 const dw=Math.max(1,Math.round(W*sc)),dh=Math.max(1,Math.round(H*sc));
 if(cv.width!==dw||cv.height!==dh){cv.width=dw;cv.height=dh;}
-cv.title="ROI "+W+"×"+H+" → 미리보기 "+dw+"×"+dh+(sc<1?" (1/"+(1/sc).toFixed(1)+" 축소)":"");
+cv.title="감지 영역 "+W+"×"+H+" → 미리보기 "+dw+"×"+dh+(sc<1?" (1/"+(1/sc).toFixed(1)+" 축소)":"");
 const x=cv.getContext("2d");
 const img=p._img;
 if(!img){x.fillStyle="#000";x.fillRect(0,0,dw,dh);
@@ -432,7 +563,7 @@ const chHtml=(ch,title,ext)=>`<div class="ch" data-ch="${ch}"><div class="chHead
 <input type="range" data-r="hi" min="0" max="${ch==="h"?360:100}" step="1" aria-label="${title} 최대"></div>
 <div class="chnum"><label>최소 <input type="number" data-r="loN" ${ext}></label><label>최대 <input type="number" data-r="hiN" ${ext}></label></div></div>`;
 d.innerHTML=`<div class="hsvHead"><span class="swatch" style="background:${h.color||maskColor(hi)}"></span>
-<b>HSV ${hi+1}</b><button class="mini" data-a="color">색상 변경</button><button class="mini" data-a="delHsv">삭제</button></div>
+<b>감지 색상 ${hi+1}</b><button class="mini" data-a="color">감지 색상 변경</button><button class="mini" data-a="delHsv">삭제</button></div>
 ${chHtml("h","H 색상각도","min='0' max='360' step='1'")}
 ${chHtml("s","S 채도","min='0' max='100' step='1'")}
 ${chHtml("v","V 명도","min='0' max='100' step='1'")}`;
@@ -465,7 +596,7 @@ loN.onchange=()=>{apply("lo",loN.value);sync();saveSoon();log();};
 hiN.onchange=()=>{apply("hi",hiN.value);sync();saveSoon();log();};
 sync();});
 d.querySelector('[data-a="color"]').onclick=()=>{h.color="hsl("+((Math.random()*360)|0)+",90%,55%)";d.querySelector(".swatch").style.background=h.color;saveSoon();};
-d.querySelector('[data-a="delHsv"]').onclick=()=>{if(p.hsv.length<=1){alert("HSV는 1개 이상 필요합니다.");return;}
+d.querySelector('[data-a="delHsv"]').onclick=()=>{if(p.hsv.length<=1){alert("감지 색상은 1개 이상 필요합니다.");return;}
 p.hsv.splice(hi,1);saveSoon();buildCards(false);Logger.log("INFO","HSV","HSV_DELETE","HSV 삭제: "+p.name,{presetId:p.id});};
 return d;}
 function roiRow(p,key,label,maxV){const w=document.createElement("div");w.className="roiRow";
@@ -489,8 +620,8 @@ e.innerHTML=`<b>기타설정</b>
 <div class="kv"><label class="mut">4. 감지 후 알람 지연(초)</label><input type="number" data-f="alarmDelay" value="${p.alarmDelay||0}" min="0" max="120" step="1" style="width:70px"></div>
 <div class="kv"><label class="mut">5. 계산 방식</label><select data-f="calcMode"><option value="c4">군집(위아래방향만)</option><option value="c8">군집(대각선방향포함)</option><option value="all">전체픽셀</option></select></div>
 <h3>알람 (Web Audio)</h3>
-<div class="kv"><label class="mut">알람 모드</label><select data-f="alarmEdge"><option value="on">ON 전환</option><option value="off">OFF 전환</option><option value="both">ON+OFF</option><option value="none">끄기</option></select>
-<label class="mut">종류 <select data-f="alarmType">${Array.from({length:10},(_,i)=>`<option value="${i+1}">알람 ${i+1}</option>`).join("")}</select></label></div>`;
+<div class="kv"><label class="mut">알람 모드</label><select data-f="alarmEdge"><option value="on">ON 전환시</option><option value="off">OFF 전환시</option><option value="both">ON OFF 둘다</option><option value="none">끄기</option></select>
+<select data-f="alarmType">${Array.from({length:10},(_,i)=>`<option value="${i+1}">알람 ${i+1}</option>`).join("")}</select></div>`;
 e.querySelector('[data-f="alarmEdge"]').value=p.alarmEdge;e.querySelector('[data-f="alarmType"]').value=p.alarmType;e.querySelector('[data-f="calcMode"]').value=p.calcMode||"c8";
 [["avgTicks",1,60],["thMin",0,999999],["thMax",0,999999],["contTicks",1,60],["alarmDelay",0,120]].forEach(([f,mn,mx])=>{
 e.querySelector(`[data-f="${f}"]`).onchange=ev=>{p[f]=clamp(+ev.target.value||0,mn,mx);ev.target.value=p[f];saveSoon();updatePresetStats(p);};});
@@ -506,8 +637,8 @@ c.innerHTML=`<div class="cardHead"><input type="text" value="${p.name.replace(/"
 <button class="mini tgl ${p.enabled?"on":"off"}" data-f="tglen">${p.enabled?"활성화":"비활성화"}</button><button class="mini danger" data-a="delPreset">삭제</button></div>
 <div class="stat"><span>현재 <b data-s="cur">${p.cur}</b></span><span>평균 <b data-s="avg">${p.avg}</b></span><span>연속 <b data-s="cont">${p.cont}/${p.contTicks}</b></span></div>
 <div class="row" style="margin:6px 0"><button class="mini" data-a="freeze">${p.frozen?"고정 해제":"화면 고정"}</button>
-<button class="mini" data-a="export">프리셋 내보내기</button><button class="mini" data-a="blend">겹침색 변경</button><button class="mini" data-a="addHsv">HSV 추가</button><span data-r="bsw"></span></div>
-<h3>ROI (원본 프레임 기준 X,Y,W,H)</h3><div class="roi2col"><div data-r="roiL"></div><div data-r="roiR"></div></div>
+<button class="mini" data-a="export">감지 카드 내보내기</button><button class="mini" data-a="blend">겹침색 변경</button><button class="mini" data-a="addHsv">감지 색상 추가</button><span data-r="bsw"></span></div>
+<h3>감지 영역 (원본 화면 기준 X, Y, 너비, 높이)</h3><div class="roi2col"><div data-r="roiL"></div><div data-r="roiR"></div></div>
 <canvas class="pv" id="pv-${p.id}"></canvas>
 <div class="setGrid" data-r="setgrid"></div>
 `;
@@ -540,7 +671,8 @@ function updatePresetStats(p){const c=$("card-"+p.id);if(!c)return;
 const q=s=>c.querySelector(`[data-s="${s}"]`);if(q("cur"))q("cur").textContent=p.cur;
 if(q("avg"))q("avg").textContent=p.avg;if(q("cont"))q("cont").textContent=p.cont+"/"+p.contTicks;
 const b=c.querySelector(".badge");if(b){b.textContent=p.state;b.className="badge "+p.state;}}
-$("btnAdd").onclick=()=>{const p=defaultPreset();presets.push(p);saveSoon();buildCards(false);
+function scrollToPreset(id){requestAnimationFrame(()=>{const c=$("card-"+id);if(c)c.scrollIntoView({behavior:"smooth",block:"start"});});}
+$("btnAdd").onclick=()=>{const p=defaultPreset();presets.push(p);saveSoon();buildCards(false);scrollToPreset(p.id);
 Logger.log("INFO","프리셋","PRESET_CREATE","프리셋 생성: "+p.name,{presetId:p.id,presetName:p.name});};
 /* ============ 화면 고정 ============ */
 function toggleFreeze(p){if(!p.frozen){if(!Cap.running||!Cap.frameW){alert("먼저 화면 공유를 시작하세요.");return;}
@@ -553,42 +685,52 @@ saveSoon();buildCards(false);}
 let dlgMode=null,dlgTarget=null;
 function openDlg(title,text,preset,forSave){$("dlgTitle").textContent=title;$("dlgText").value=text||"";$("dlgMsg").textContent="";$("dlg").showModal();}
 function exportPreset(p){const t=JSON.stringify(serializePreset(p),null,2);
-copyText(t).then(ok=>{if(ok){alert("프리셋이 복사되었습니다.");}
-else{openDlg("프리셋 내보내기 — "+p.name,t);$("dlgOk").style.display="none";$("dlgCopy").style.display="";$("dlgMsg").textContent="복사 실패: 텍스트를 직접 선택해 복사하세요.";$("dlgText").select();}});
+copyText(t).then(ok=>{if(ok){alert("감지 카드가 복사되었습니다.");}
+else{openDlg("감지 카드 내보내기 — "+p.name,t);$("dlgOk").style.display="none";$("dlgCopy").style.display="";$("dlgMsg").textContent="복사 실패: 텍스트를 직접 선택해 복사하세요.";$("dlgText").select();}});
 Logger.log("INFO","저장","PRESET_EXPORT","프리셋 내보내기: "+p.name,{presetId:p.id});}
 async function copyText(t){try{await navigator.clipboard.writeText(t);return true;}catch(e){return false;}}
-$("dlgCopy").onclick=()=>copyText($("dlgText").value).then(ok=>{$("dlgMsg").textContent=ok?"프리셋이 복사되었습니다.":"복사 실패: 직접 선택해 복사하세요.";});
+$("dlgCopy").onclick=()=>copyText($("dlgText").value).then(ok=>{$("dlgMsg").textContent=ok?"감지 카드가 복사되었습니다.":"복사 실패: 직접 선택해 복사하세요.";});
 $("dlgClose").onclick=()=>{$("dlg").close();$("dlgOk").style.display="";};
 $("dlgOk").onclick=()=>{const t=$("dlgText").value;
 try{if(dlgMode==="importPreset"){const o=JSON.parse(t);
 const errs=validatePresetObj(o);if(errs.length)throw new Error(errs.join("; "));
-const n=presetFromObj(o);presets.push(n);saveSoon();buildCards(false);$("dlg").close();alert("프리셋을 가져왔습니다: "+n.name);
+const n=presetFromObj(o);presets.push(n);saveSoon();buildCards(false);$("dlg").close();alert("감지 카드를 가져왔습니다: "+n.name);scrollToPreset(n.id);
 Logger.log("INFO","저장","PRESET_IMPORT","프리셋 가져오기 성공: "+n.name,{presetName:n.name});}
 else if(dlgMode==="importAll"){const o=JSON.parse(t);
 if(o.v!==SCHEMA||!Array.isArray(o.presets))throw new Error("전체 설정 형식 오류 (v="+o.v+")");
-const list=o.presets.map(q=>{const e=validatePresetObj({kind:"preset",preset:q});if(e.length)throw new Error("프리셋 오류: "+e.join("; "));return presetFromObj({kind:"preset",preset:q});});
+const list=o.presets.map(q=>{const e=validatePresetObj({kind:"preset",preset:q});if(e.length)throw new Error("감지 카드 오류: "+e.join("; "));return presetFromObj({kind:"preset",preset:q});});
 const mode=document.querySelector('input[name="impMode"]:checked')?.value||"replace";
-if(mode==="replace"){presets=list;common.interval=clamp(+o.common?.interval||500,50,10000);$("inInterval").value=common.interval;}
+if(mode==="replace"){presets=list;common.interval=clamp(+o.common?.interval||500,50,10000);$("inInterval").value=common.interval;common.uiScale=clamp(+o.common?.uiScale||1,0.5,1.5);}
 else presets.push(...list);
-saveSoon();buildCards(false);$("dlg").close();alert("전체 설정을 가져왔습니다 ("+list.length+"개)");
+saveSoon();buildCards(false);$("dlg").close();alert("전체 설정을 가져왔습니다 ("+list.length+"개)");if(list.length)scrollToPreset(list[0].id);
 Logger.log("INFO","저장","CONFIG_IMPORT","전체 설정 가져오기 성공",{settings:{count:list.length,mode}});}}
 catch(e){$("dlgMsg").textContent="가져오기 실패: "+e.message+" (기존 설정 유지)";
 Logger.log("ERROR","저장","IMPORT_VALIDATE_FAIL","가져오기 검증 실패",{actual:String(e&&e.message),suggestedAction:"내보낸 텍스트 원본을 그대로 붙여넣기"});}};
 // 프리셋 가져오기 메뉴(별도): 헤더에 버튼 동적 추가
-(function(){const b=document.createElement("button");b.textContent="프리셋 가져오기";b.onclick=()=>{
-dlgMode="importPreset";$("dlgOk").style.display="";openDlg("프리셋 가져오기","");$("dlgText").value="";$("dlgMsg").textContent="내보낸 프리셋 텍스트를 붙여넣고 저장을 누르세요.";};
-document.querySelector("header .row:nth-child(3)").insertBefore(b,$("btnExportAll"));})();
+(function(){const b=document.createElement("button");b.textContent="감지 카드 가져오기";b.onclick=()=>{
+dlgMode="importPreset";$("dlgOk").style.display="";openDlg("감지 카드 가져오기","");$("dlgText").value="";$("dlgMsg").textContent="내보낸 감지 카드 텍스트를 붙여넣고 저장을 누르세요.";};
+$("btnExportAll").parentNode.insertBefore(b,$("btnExportAll"));})();
 $("btnExportAll").onclick=()=>{const t=JSON.stringify({v:SCHEMA,common,presets:presets.map(p=>serializePreset(p).preset)},null,2);
 copyText(t).then(ok=>{if(ok){alert("전체 설정이 복사되었습니다.");}
 else{openDlg("전체 설정 내보내기",t);$("dlgOk").style.display="none";$("dlgCopy").style.display="";$("dlgMsg").textContent="복사 실패: 직접 선택해 복사하세요.";$("dlgText").select();}});
 Logger.log("INFO","저장","CONFIG_EXPORT","전체 설정 내보내기",{});};
 $("btnImportAll").onclick=()=>{dlgMode="importAll";$("dlgOk").style.display="";openDlg("전체 설정 가져오기","");
-$("dlgText").value="";$("dlgMsg").innerHTML='붙여넣고 저장. <label><input type="radio" name="impMode" value="replace" checked> 전체 교체</label> <label><input type="radio" name="impMode" value="add"> 프리셋만 추가</label>';};
-$("btnResetAll").onclick=()=>{if(!confirm("공통 설정과 모든 프리셋을 초기화할까요?"))return;
-presets=[];common.interval=500;$("inInterval").value=500;common.pvMax=320;$("inPvMax").value=320;saveSoon();buildCards(false);
+$("dlgText").value="";$("dlgMsg").innerHTML='붙여넣고 저장. <label><input type="radio" name="impMode" value="replace" checked> 전체 교체</label> <label><input type="radio" name="impMode" value="add"> 감지 카드만 추가</label>';};
+$("btnResetAll").onclick=()=>{if(!confirm("공통 설정과 모든 감지 카드를 초기화할까요?"))return;
+presets=[];common.interval=500;$("inInterval").value=500;common.pvMax=320;$("inPvMax").value=320;common.uiScale=1;saveSoon();buildCards(false);
 Logger.log("WARN","저장","CONFIG_RESET","전체 초기화 실행",{});};
 /* ============ 시작 ============ */
 loadSaved();$("inInterval").value=common.interval;$("inPvMax").value=common.pvMax||320;buildCards(false);
+function fitZoom(){const w=window.innerWidth||1440;
+const auto=clamp(w/1440,0.5,1.25);
+const z=clamp(auto*clamp(+common.uiScale||1,0.5,1.5),0.3,2);
+document.body.style.zoom=z;
+const b=$("btnUiPct");if(b)b.textContent=Math.round(clamp(+common.uiScale||1,0.5,1.5)*100)+"%";return z;}
+function stepUiScale(d){common.uiScale=clamp(Math.round((common.uiScale+d)*100)/100,0.5,1.5);saveSoon();fitZoom();}
+window.addEventListener("resize",fitZoom);fitZoom();
+$("btnUiMinus").onclick=()=>stepUiScale(-0.05);
+$("btnUiPlus").onclick=()=>stepUiScale(0.05);
+$("btnUiPct").onclick=()=>{common.uiScale=1;saveSoon();fitZoom();};
 Cap.restartLoop(); // 공유 전에도 공통 루프 유지(대기·고정 프리셋 분석용)
 Logger.log("INFO","감지","APP_START","프로그램 시작 (단일 HTML, 외부 의존성 없음)",{settings:{interval:common.interval}});
 </script>

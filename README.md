@@ -20,3 +20,4 @@
 ## 파일
 
 - `screen-detector-v2.html` — 프로그램 본체 (V2)
+- `screen-detector-v5.html` — 최신 버전 (V5: 자동 화면 배율, 타이머, 30분 알람 포함)
