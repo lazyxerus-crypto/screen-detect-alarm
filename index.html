@@ -570,7 +570,7 @@ const chHtml=(ch,title,ext)=>`<div class="ch" data-ch="${ch}"><div class="chHead
 <input type="range" data-r="hi" min="0" max="${ch==="h"?360:100}" step="1" aria-label="${title} 최대"></div>
 <div class="chnum"><label>최소 <input type="number" data-r="loN" ${ext}></label><label>최대 <input type="number" data-r="hiN" ${ext}></label></div></div>`;
 d.innerHTML=`<div class="hsvHead"><span class="swatch" style="background:${h.color||maskColor(hi)}"></span>
-<b>감지 색상 ${hi+1}</b><button class="mini" data-a="color">감지 색상 변경</button><button class="mini" data-a="delHsv">삭제</button></div>
+<b>감지 색상 ${hi+1}</b><button class="mini" data-a="color">색상변경</button><button class="mini" data-a="addHsv">색상 추가</button><button class="mini" data-a="delHsv">삭제</button></div>
 ${chHtml("h","H 색상각도","min='0' max='360' step='1'")}
 ${chHtml("s","S 채도","min='0' max='100' step='1'")}
 ${chHtml("v","V 명도","min='0' max='100' step='1'")}`;
@@ -603,6 +603,7 @@ loN.onchange=()=>{apply("lo",loN.value);sync();saveSoon();log();};
 hiN.onchange=()=>{apply("hi",hiN.value);sync();saveSoon();log();};
 sync();});
 d.querySelector('[data-a="color"]').onclick=()=>{h.color="hsl("+((Math.random()*360)|0)+",90%,55%)";d.querySelector(".swatch").style.background=h.color;saveSoon();};
+d.querySelector('[data-a="addHsv"]').onclick=()=>{p.hsv.push({hMin:0,hMax:360,sMin:0,sMax:1,vMin:0,vMax:1,color:maskColor(p.hsv.length)});saveSoon();buildCards(false);};
 d.querySelector('[data-a="delHsv"]').onclick=()=>{if(p.hsv.length<=1){alert("감지 색상은 1개 이상 필요합니다.");return;}
 p.hsv.splice(hi,1);saveSoon();buildCards(false);Logger.log("INFO","HSV","HSV_DELETE","HSV 삭제: "+p.name,{presetId:p.id});};
 return d;}
@@ -644,7 +645,7 @@ c.innerHTML=`<div class="cardHead"><input type="text" value="${p.name.replace(/"
 <button class="mini tgl ${p.enabled?"on":"off"}" data-f="tglen">${p.enabled?"활성화":"비활성화"}</button><button class="mini danger" data-a="delPreset">삭제</button></div>
 <div class="stat"><span>현재 <b data-s="cur">${p.cur}</b></span><span>평균 <b data-s="avg">${p.avg}</b></span><span>연속 <b data-s="cont">${p.cont}/${p.contTicks}</b></span></div>
 <div class="row" style="margin:6px 0"><button class="mini" data-a="freeze">${p.frozen?"고정 해제":"화면 고정"}</button>
-<button class="mini" data-a="export">감지 카드 내보내기</button><button class="mini" data-a="blend">겹침색 변경</button><button class="mini" data-a="addHsv">감지 색상 추가</button><span data-r="bsw"></span></div>
+<button class="mini" data-a="export">감지 카드 내보내기</button><button class="mini" data-a="blend">겹침색 변경</button><span data-r="bsw"></span></div>
 <h3>감지 영역 (원본 화면 기준 X, Y, 너비, 높이)</h3><div class="roi2col"><div data-r="roiL"></div><div data-r="roiR"></div></div>
 <canvas class="pv" id="pv-${p.id}"></canvas>
 <div class="setGrid" data-r="setgrid"></div>
@@ -658,7 +659,6 @@ rr.append(roiRow(p,"w","W",fw),roiRow(p,"h","H",fh));
 const sg=c.querySelector('[data-r="setgrid"]');
 sg.append(etcCard(p));
 p.hsv.forEach((h,i)=>sg.append(hsvRow(p,h,i)));
-c.querySelector('[data-a="addHsv"]').onclick=()=>{p.hsv.push({hMin:0,hMax:360,sMin:0,sMax:1,vMin:0,vMax:1,color:maskColor(p.hsv.length)});saveSoon();buildCards(false);};
 c.querySelector('[data-a="freeze"]').onclick=()=>toggleFreeze(p);
 c.querySelector('[data-a="export"]').onclick=()=>exportPreset(p);
 c.querySelector('[data-a="delPreset"]').onclick=()=>{if(!confirm("삭제할까요?"))return;
