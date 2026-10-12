@@ -569,8 +569,8 @@ const chHtml=(ch,title,ext)=>`<div class="ch" data-ch="${ch}"><div class="chHead
 <input type="range" data-r="lo" min="0" max="${ch==="h"?360:100}" step="1" aria-label="${title} 최소">
 <input type="range" data-r="hi" min="0" max="${ch==="h"?360:100}" step="1" aria-label="${title} 최대"></div>
 <div class="chnum"><label>최소 <input type="number" data-r="loN" ${ext}></label><label>최대 <input type="number" data-r="hiN" ${ext}></label></div></div>`;
-d.innerHTML=`<div class="hsvHead"><span class="swatch" style="background:${h.color||maskColor(hi)}"></span>
-<b>감지 색상 ${hi+1}</b><button class="mini" data-a="color">색상변경</button><button class="mini" data-a="addHsv">색상 추가</button><button class="mini" data-a="delHsv">삭제</button></div>
+d.innerHTML=`<div class="hsvHead"><span class="swatch" data-a="color" title="클릭하면 색상 변경" style="background:${h.color||maskColor(hi)};cursor:pointer"></span>
+<b>감지 색상</b><button class="mini" data-a="addHsv">색상 추가</button><button class="mini danger" data-a="delHsv">삭제</button></div>
 ${chHtml("h","H 색상각도","min='0' max='360' step='1'")}
 ${chHtml("s","S 채도","min='0' max='100' step='1'")}
 ${chHtml("v","V 명도","min='0' max='100' step='1'")}`;
