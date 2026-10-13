@@ -24,7 +24,7 @@ main{padding:12px 14px 60px;max-width:1280px;margin:0 auto}
 .mut{color:var(--mut);font-size:12px}.mono{font-family:Consolas,monospace;font-size:12px}
 #originWrap{position:relative;display:inline-block;max-width:100%;background:#000;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 #originVideo{max-width:100%;max-height:52vh;display:block}
-#originOverlay{position:absolute;left:0;top:0;pointer-events:none}
+#originOverlay{position:absolute;left:0;top:0;pointer-events:auto}
 .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:12px;font-weight:700}
 .on{background:#0d4429;color:#4be08a}.off{background:#333d49;color:var(--mut)}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:12px;margin-bottom:18px}
@@ -155,7 +155,7 @@ footer.panel{text-align:center}
 <ol>
 <li><b>화면 공유 시작</b>을 눌러 감시할 화면을 공유합니다.</li>
 <li><b>감지 카드 추가</b>로 감지 카드를 만듭니다. 카드 상단의 활성화/비활성화 토글로 분석 대상을 켜고 끕니다.</li>
-<li><b>감지 영역</b>을 지정합니다 (X·Y 왼쪽, W·H 오른쪽).</li>
+<li><b>감지 영역</b>을 지정합니다 (X·Y 왼쪽, W·H 오른쪽). 원본 화면의 테두리를 드래그해서 크기를 조절할 수도 있습니다.</li>
 <li><b>감지 색상 범위</b>에서 찾을 색 범위를 지정합니다.</li>
 <li><b>감지조건</b>
 <ul>
@@ -562,6 +562,44 @@ if(p._pvFull.width!==W||p._pvFull.height!==H){p._pvFull.width=W;p._pvFull.height
 p._pvFull.getContext("2d").putImageData(out,0,0);
 x.imageSmoothingEnabled=true;x.clearRect(0,0,dw,dh);x.drawImage(p._pvFull,0,0,dw,dh);}}};
 let _szT=0;function sizeOverlayOnce(){const n=Date.now();if(n-_szT>1000){_szT=n;sizeOverlay();}}
+/* ============ ROI 드래그 리사이즈 (원본 오버레이) ============ */
+const RoiDrag={drag:null,
+pos(e){const c=$("originOverlay"),r=c.getBoundingClientRect(),v=$("originVideo");
+if(!r.width||!v.videoWidth)return null;
+return{fx:(e.clientX-r.left)*v.videoWidth/r.width,fy:(e.clientY-r.top)*v.videoHeight/r.height,t:Math.max(4,10*v.videoWidth/r.width)};},
+pick(fx,fy,t){for(let i=presets.length-1;i>=0;i--){const p=presets[i];if(!p.enabled)continue;
+const h=this.hit(p,fx,fy,t);if(h)return{p,h};}return null;},
+hit(p,fx,fy,t){const r=p.roi;
+const L=Math.abs(fx-r.x)<t,R=Math.abs(fx-(r.x+r.w))<t,T=Math.abs(fy-r.y)<t,B=Math.abs(fy-(r.y+r.h))<t;
+if(!(fx>r.x-t&&fx<r.x+r.w+t&&fy>r.y-t&&fy<r.y+r.h+t))return null;
+if(L&&T)return"nw";if(R&&T)return"ne";if(L&&B)return"sw";if(R&&B)return"se";
+if(L)return"w";if(R)return"e";if(T)return"n";if(B)return"s";return null;},
+cursor(h){return{e:"ew-resize",w:"ew-resize",n:"ns-resize",s:"ns-resize",nw:"nwse-resize",se:"nwse-resize",ne:"nesw-resize",sw:"nesw-resize"}[h]||"default";},
+down(e){const q=this.pos(e);if(!q)return;const f=this.pick(q.fx,q.fy,q.t);if(!f)return;
+e.preventDefault();this.drag={id:f.p.id,h:f.h,s:{...f.p.roi},moved:false};
+$("originOverlay").style.cursor=this.cursor(f.h);},
+move(e){const c=$("originOverlay");const q=this.pos(e);if(!q)return;
+if(!this.drag){const f=this.pick(q.fx,q.fy,q.t);c.style.cursor=f?this.cursor(f.h):"default";return;}
+const p=presets.find(x=>x.id===this.drag.id);if(!p){this.drag=null;return;}
+const FW=Cap.frameW,FH=Cap.frameH;if(!FW)return;
+let r={...p.roi};const s=this.drag.s,h=this.drag.h;
+if(h.includes("e"))r.w=q.fx-r.x;
+if(h.includes("s"))r.h=q.fy-r.y;
+if(h.includes("w")){r.w=(s.x+s.w)-q.fx;r.x=q.fx;}
+if(h.includes("n")){r.h=(s.y+s.h)-q.fy;r.y=q.fy;}
+r.x=clamp(Math.round(r.x),0,FW-1);r.y=clamp(Math.round(r.y),0,FH-1);
+r.w=clamp(Math.round(r.w),1,FW-r.x);r.h=clamp(Math.round(r.h),1,FH-r.y);
+p.roi=r;p.hist=[];p.cont=0;this.drag.moved=true;
+if(p._roiSync){for(const k of["x","y","w","h"])if(p._roiSync[k])p._roiSync[k](r[k]);}
+Preview.renderOrigin();saveSoon();},
+up(){if(this.drag&&this.drag.moved){const p=presets.find(x=>x.id===this.drag.id);
+if(p)Logger.log("DEBUG","ROI","ROI_DRAG","ROI 드래그 변경: "+p.name+" ("+p.roi.x+","+p.roi.y+","+p.roi.w+"×"+p.roi.h+")",{presetId:p.id,presetName:p.name,roi:{...p.roi}});}
+this.drag=null;const c=$("originOverlay");if(c)c.style.cursor="default";}};
+(function(){const c=$("originOverlay");
+c.addEventListener("mousedown",e=>RoiDrag.down(e));
+c.addEventListener("mousemove",e=>RoiDrag.move(e));
+c.addEventListener("mouseleave",()=>{if(!RoiDrag.drag)$("originOverlay").style.cursor="default";});
+window.addEventListener("mouseup",()=>RoiDrag.up());})();
 /* ============ 프리셋 카드 UI ============ */
 function hsvRow(p,h,hi){const d=document.createElement("div");d.className="hsv";
 const chHtml=(ch,title,ext)=>`<div class="ch" data-ch="${ch}"><div class="chHead"><span>${title}</span><span class="mut" data-r="lab"></span></div>
@@ -615,6 +653,7 @@ const lim={x:FW-1,y:FH-1,w:FW-p.roi.x,h:FH-p.roi.y};
 if(key==="w")v=clamp(Math.round(v),1,FW-p.roi.x||1);else if(key==="h")v=clamp(Math.round(v),1,FH-p.roi.y||1);
 else v=clamp(Math.round(v),0,(key==="x"?FW-1:FH-1));
 p.roi[key]=v;p.hist=[];p.cont=0;saveSoon();num.value=v;sl.value=v;};
+(p._roiSync=p._roiSync||{})[key]=v=>{num.value=v;sl.value=v;};
 num.onchange=()=>set(+num.value);sl.oninput=()=>set(+sl.value);
 num.onkeydown=e=>{if(e.key==="ArrowUp"){e.preventDefault();set(+num.value+1);}if(e.key==="ArrowDown"){e.preventDefault();set(+num.value-1);}};
 w.querySelectorAll("button").forEach(b=>b.onclick=()=>set(p.roi[key]+(+b.dataset.d)));
