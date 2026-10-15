@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>화면 색상 감지 알리미 - HSV 범위 감지 및 소리 알람</title>
+<title>화면 감지 알리미 (Screen Alarm) - 색상·이미지 감지 및 소리 알람</title>
 <meta name="description" content="크롬 화면 공유를 이용해 원하는 HSV 색상 범위를 실시간 감지하고, 조건에 맞는 색상이 나타나면 소리로 알려주는 무료 브라우저 도구입니다.">
 <meta name="robots" content="index,follow">
 <meta name="theme-color" content="#121418">
@@ -24,7 +24,7 @@ main{padding:12px 14px 60px;max-width:1280px;margin:0 auto}
 .mut{color:var(--mut);font-size:12px}.mono{font-family:Consolas,monospace;font-size:12px}
 #originWrap{position:relative;display:inline-block;max-width:100%;background:#000;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 #originVideo{max-width:100%;max-height:52vh;display:block}
-#originOverlay{position:absolute;left:0;top:0;pointer-events:auto}
+#originOverlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:auto;touch-action:none}
 .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:12px;font-weight:700}
 .on{background:#0d4429;color:#4be08a}.off{background:#333d49;color:var(--mut)}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:12px;margin-bottom:18px}
@@ -37,7 +37,7 @@ main{padding:12px 14px 60px;max-width:1280px;margin:0 auto}
 .card.alarming{border-color:var(--err);animation:alarmPulse .7s ease-in-out infinite;}
 .cardHead{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .cardHead input[type=text]{flex:1;min-width:120px}
-.pv{width:100%;background:#000;border:1px solid var(--line);border-radius:6px;image-rendering:pixelated}
+.pv{width:100%;background:#000;border:1px solid var(--line);border-radius:6px;image-rendering:pixelated;touch-action:none}
 .roiGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin:6px 0}
 .roiRow{display:flex;align-items:center;gap:4px}
 .roiRow label{width:16px;color:var(--mut)}.roiRow input[type=number]{width:70px}
@@ -68,7 +68,7 @@ dialog textarea{width:100%;min-height:160px}
 .dual input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:auto;width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--acc);cursor:pointer}
 .dual input[type=range]::-moz-range-track{background:transparent}
 .dual input[type=range]::-moz-range-thumb{pointer-events:auto;width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid var(--acc);cursor:pointer}
-#headSide{flex:400;min-width:0;min-height:120px;border:1px dashed var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#0c0f13 url("side.png") center/auto 100% no-repeat}
+#headSide{flex:400;min-width:0;min-height:120px;border:1px dashed var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#0c0f13 url("side.png") center/auto 100% repeat-x}
 .headSplit{display:flex;gap:14px;align-items:stretch}
 .headLeft{flex:900;min-width:0}
 @media (max-width:900px){.headSplit{flex-direction:column}}
@@ -77,6 +77,12 @@ footer.panel{text-align:center}
 .addCard{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;border-style:dashed;cursor:pointer;color:var(--mut)}
 .addCard:hover{border-color:var(--acc);color:var(--acc)}
 .addPlus{font-size:48px;line-height:1}
+.addHsvCard{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:84px;border-style:dashed;cursor:pointer;color:var(--mut)}
+.addHsvCard:hover{border-color:var(--acc);color:var(--acc)}
+.modeSeg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.modeSeg button{border:none;border-radius:0;background:#0f1216}
+.modeSeg button.on{background:#1f6feb}
+.imgPanel{border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0;background:#191f28}
 .linkbtn{background:none;border:none;color:var(--acc);cursor:pointer;text-decoration:underline;font-size:14px;padding:0}
 .chnum{display:flex;gap:10px;margin-top:2px}.chnum label{font-size:11px;color:var(--mut)}.chnum input{width:84px}
 .tgl{font-weight:700;border-radius:20px;padding:4px 12px}
@@ -95,16 +101,16 @@ footer.panel{text-align:center}
 <div class="row">
 <button id="btnShare" class="primary">화면 공유 시작</button>
 <button id="btnStopShare">공유 중지</button>
-<button id="btnAudio">오디오 활성화 (클릭)</button>
+<button id="btnAudio">오디오 활성화</button>
 <button id="btnHelp">사용방법</button>
 <span class="mut">실제 해상도: <b id="resLabel" class="mono">-</b></span>
-<span class="mut">분석틱: <b id="tickLabel" class="mono">0</b></span>
+<span class="mut">분석 횟수: <b id="tickLabel" class="mono">0</b></span>
 <span class="mut">분석시간: <b id="perfLabel" class="mono">-</b></span>
 <span id="perfWarn" class="badge off">정상</span>
 </div>
 <div class="row" style="margin-top:8px">
-<label class="mut">공통 분석 주기(ms) <input type="number" id="inInterval" value="500" min="50" max="10000" step="50" style="width:90px"></label>
-<button id="btnExportAll">전체 설정 내보내기</button>
+<label class="mut">분석 간격(ms) <input type="number" id="inInterval" value="500" min="50" max="10000" step="50" style="width:90px"></label>
+<button id="btnExportAll">전체 설정 복사</button>
 <button id="btnImportAll">전체 설정 가져오기</button>
 <button id="btnResetAll" class="danger">전체 초기화</button>
 </div>
@@ -129,25 +135,25 @@ footer.panel{text-align:center}
 <div id="originBody"><div id="originWrap"><video id="originVideo" autoplay muted playsinline></video><canvas id="originOverlay"></canvas></div></div>
 </section>
 <section>
-<h2>B. 각 감지 카드 개별 화면 (감지 영역 + 불투명 감지 색상 범위 마스크)</h2>
+<h2>B. 각 감지 카드 개별 화면 (감지 영역 + 감지된 색상 표시)</h2>
 <div class="row" style="margin:6px 0"><label class="mut">미리보기 최대 크기(px) <input type="number" id="inPvMax" value="320" min="80" max="1080" step="10" style="width:80px"></label><span class="mut">긴 변이 이 값을 넘으면 미리보기만 축소 표시(감지 계산은 원본 해상도 그대로)</span></div>
 <div id="cards" class="cards"></div>
 </section>
 <section class="panel">
-<h2>구조화 로그</h2>
+<h2>기록</h2>
 <div class="row">
-<label class="mut"><input type="checkbox" class="lvF" value="DEBUG" checked> DEBUG</label>
-<label class="mut"><input type="checkbox" class="lvF" value="INFO" checked> INFO</label>
-<label class="mut"><input type="checkbox" class="lvF" value="WARN" checked> WARN</label>
-<label class="mut"><input type="checkbox" class="lvF" value="ERROR" checked> ERROR</label>
-<button id="btnLogCopy" class="mini">로그 복사</button>
-<button id="btnLogClear" class="mini">로그 지우기</button>
+<label class="mut"><input type="checkbox" class="lvF" value="DEBUG" checked> 상세</label>
+<label class="mut"><input type="checkbox" class="lvF" value="INFO" checked> 정보</label>
+<label class="mut"><input type="checkbox" class="lvF" value="WARN" checked> 경고</label>
+<label class="mut"><input type="checkbox" class="lvF" value="ERROR" checked> 오류</label>
+<button id="btnLogCopy" class="mini">기록 복사</button>
+<button id="btnLogClear" class="mini">기록 지우기</button>
 </div>
 <div id="logList"></div>
 </section>
 </main>
 <footer class="panel">
-  <p>Screen Alarm (화면 감지 알리미) — 브라우저 기반 HSV 색상 감지 도구</p>
+  <p>Screen Alarm (화면 감지 알리미) — 브라우저 기반 화면 변화 감지 도구 (색상·이미지)</p>
   <button class="linkbtn" id="footGuide">사용 방법 및 개인정보 안내</button> | <button class="linkbtn" id="footPrivacy">개인정보처리방침</button> | <button class="linkbtn" id="footContact">문의하기</button>
 </footer>
 <dialog id="dlg"><h3 id="dlgTitle"></h3><textarea id="dlgText"></textarea><div class="row" style="margin-top:8px"><button id="dlgOk" class="primary">저장</button><button id="dlgCopy">복사</button><button id="dlgClose">닫기</button></div><div class="mut" id="dlgMsg"></div></dialog>
@@ -155,38 +161,40 @@ footer.panel{text-align:center}
 <ol>
 <li><b>화면 공유 시작</b>을 눌러 감시할 화면을 공유합니다.</li>
 <li><b>감지 카드 추가</b>로 감지 카드를 만듭니다. 카드 상단의 활성화/비활성화 토글로 분석 대상을 켜고 끕니다.</li>
-<li><b>감지 영역</b>을 지정합니다 (X·Y 왼쪽, W·H 오른쪽). 원본 화면의 테두리를 드래그해서 크기를 조절할 수도 있습니다.</li>
-<li><b>감지 색상 범위</b>에서 찾을 색 범위를 지정합니다.</li>
+<li><b>감지 영역</b>을 지정합니다 (X·Y 왼쪽, W·H 오른쪽). 원본 화면의 박스를 드래그하면 이동하고, 테두리를 드래그하면 크기를 조절할 수 있습니다.</li>
+<li><b>감지 색상 범위</b>에서 찾을 색 범위를 지정합니다. 각 감지 색상의 [색 추출]을 누른 뒤 미리보기를 클릭하면 클릭한 색과 연결된 유사색 영역이 페인트 채우기처럼 자동 채워지고, 채워진 색의 최소값(1의 자리 내림)~최대값(1의 자리 올림)으로 감지 범위가 자동 설정됩니다. 완료 시 감지 크기 범위는 현재 계산 방식(덩어리 대각선 포함/흩어진 픽셀 합산/덩어리 상하좌우)의 덩어리값 ±1로 자동 설정됩니다. (완료: 버튼 다시 클릭 / 취소: Esc)</li>
 <li><b>감지조건</b>
 <ul>
-<li>① 평균 틱: 최근 N틱의 감지값을 평균냅니다. 1이면 그 틱의 값 그대로 사용합니다.</li>
-<li>② 임계값 범위: 평균값이 최소~최대 안에 들어야 조건을 만족합니다.</li>
-<li>③ 연속 틱: 조건을 연속 N틱 만족해야 감지 ON이 됩니다. 한 틱이라도 벗어나면 즉시 OFF됩니다.</li>
-<li>④ 알람 지연: ON이 된 뒤 N초 후에 알람이 울립니다. 기다리는 동안 감지가 꺼져도 예약된 알람은 울립니다.</li>
-<li>⑤ 계산 방식: 군집(위아래방향만)은 상하좌우로 이어진 덩어리 중 가장 큰 것, 군집(대각선방향포함)은 대각선까지 포함한 덩어리 중 가장 큰 것, 전체픽셀은 조건에 맞는 픽셀 전부 개수를 감지값으로 씁니다.</li>
+<li>① 평균 횟수: 최근 N회의 감지값을 평균냅니다. 1이면 그 회의 값 그대로 사용합니다.</li>
+<li>② 감지 크기 범위: 평균값이 최소~최대 픽셀 수 안에 들어야 조건을 만족합니다.</li>
+<li>③ 연속 횟수: 조건을 연속 N회 만족해야 감지가 시작됩니다. 한 번이라도 벗어나면 즉시 꺼집니다.</li>
+<li>④ 알람 대기: 감지된 뒤 N초 후에 알람이 울립니다. 기다리는 동안 감지가 꺼져도 예약된 알람은 울립니다.</li>
+<li>⑤ 크기 계산 방식: 덩어리(상하좌우만)는 상하좌우로 이어진 덩어리 중 가장 큰 것, 덩어리(대각선 포함)는 대각선까지 포함한 덩어리 중 가장 큰 것, 흩어진 픽셀 전부 합산은 조건에 맞는 픽셀 전부 개수를 감지값으로 씁니다.</li>
 </ul></li>
 <li><b>알람</b>
 <ul>
-<li>ON 전환시: 감지가 시작될 때 울립니다. 지연 시간이 있으면 그만큼 기다렸다 울리고, 감지가 계속되면 2.5초 간격으로 반복됩니다.</li>
-<li>OFF 전환시: 감지가 끝날 때 즉시 1번만 울립니다.</li>
-<li>ON OFF 둘다: 시작과 종료 모두 울립니다.</li>
+<li>감지 시작할 때: 감지가 시작될 때 울립니다. 대기 시간이 있으면 그만큼 기다렸다 울리고, 감지가 계속되면 2.5초 간격으로 반복됩니다.</li>
+<li>감지 끝날 때: 감지가 끝날 때 즉시 1번만 울립니다.</li>
+<li>시작·끝 둘 다: 시작과 종료 모두 울립니다.</li>
 <li>끄기: 알람을 사용하지 않습니다.</li>
 </ul></li>
-<li><b>화면 고정</b>으로 화면을 캡쳐해서 분석할 수 있습니다.</li>
-<li><b>감지 카드 내보내기</b>는 클립보드에 복사, <b>감지 카드 가져오기</b>에 붙여넣으면 새 감지 카드가 추가됩니다.</li>
+<li><b>현재 화면 고정</b>으로 화면을 멈춰서 분석할 수 있습니다.</li>
+<li><b>이미지 인식</b>은 카드의 [이미지 인식] 모드에서 사용합니다. [영역 캡처] 후 미리보기의 민트색 상자를 드래그해 기준 이미지를 지정하고 [저장]하세요. 검색 범위는 감지 영역 전체이며, 유사도가 기준(50~100%, 기본 99%) 이상이면 감지됩니다. 계산은 별도 스레드(Worker)에서 흑백 NCC 2단계 탐색+색상 확인으로 수행됩니다. 게임 해상도·UI 크기를 바꾸면 다시 캡처하세요.</li>
+<li><b>카드 설정 복사</b>는 클립보드에 복사, <b>카드 설정 가져오기</b>에 붙여넣으면 새 감지 카드가 추가됩니다.</li>
 <li><b>오디오 활성화</b>를 한 번 눌러두면 브라우저 정책과 무관하게 알람이 정상 재생됩니다.</li>
 </ol>
 <div class="mut">설정은 자동 저장됩니다.</div>
 </dialog>
 <dialog id="dlgGuide">
-  <h3>화면 색상 감지 알리미란?</h3>
-  <p>화면 색상 감지 알리미는 크롬에서 공유한 화면의 특정 영역을 분석해 사용자가 지정한 HSV 색상 범위와 감지 조건에 맞는 변화가 나타나면 소리로 알려주는 브라우저 도구입니다.</p>
+  <h3>화면 감지 알리미란?</h3>
+  <p>화면 감지 알리미는 크롬에서 공유한 화면의 특정 영역을 분석해 사용자가 지정한 색상 범위나 기준 이미지와 감지 조건에 맞는 변화가 나타나면 소리로 알려주는 브라우저 도구입니다.</p>
   <h3>사용 방법</h3>
   <ol>
     <li>화면 공유 시작 버튼을 누르고 감지할 화면이나 창을 선택합니다.</li>
     <li>감지 카드 추가 버튼을 눌러 감지 영역을 설정합니다.</li>
     <li>H는 색상, S는 채도, V는 명도 범위를 조정합니다.</li>
-    <li>임계값과 연속 감지 틱을 설정해 원하는 조건을 지정합니다.</li>
+    <li>감지 크기와 연속 감지 횟수를 설정해 원하는 조건을 지정합니다.</li>
+    <li>이미지 인식 모드에서는 [영역 캡처] 후 미리보기의 민트색 상자를 드래그해 기준 이미지를 지정하고 [저장]합니다. 유사도 기준(50~100%, 기본 99%) 이상이면 감지됩니다.</li>
     <li>오디오 활성화 버튼을 누른 뒤 감지가 작동하는지 테스트합니다.</li>
   </ol>
   <h3>HSV란 무엇인가요?</h3>
@@ -196,7 +204,7 @@ footer.panel{text-align:center}
   <p>광고 서비스를 이용하는 경우 광고 제공자가 쿠키 또는 유사한 기술을 사용할 수 있습니다. 실제 데이터 처리 방식과 광고 서비스 사용 여부에 맞춰 개인정보 처리 안내를 확인해 주세요.</p></dialog>
 <dialog id="dlgPrivacy"><h3>개인정보처리방침</h3>
 <p class="mut">최종 업데이트: 2026년 10월 13일</p>
-<p>Screen Alarm (화면 감지 알리미)은 화면 색상 감지 도구를 제공하며, Google AdSense를 통해 광고를 표시할 수 있습니다.</p>
+<p>Screen Alarm (화면 감지 알리미)은 화면 변화 감지 도구를 제공하며, Google AdSense를 통해 광고를 표시할 수 있습니다.</p>
 <h3>화면 공유 및 설정 저장</h3>
 <p>화면 감지 기능은 사용자가 브라우저에서 화면 공유를 허용한 경우 작동합니다. 화면 처리는 브라우저 내에서 이루어지며, 사이트는 화면 영상 자체를 서버로 전송하도록 설계되지 않았습니다.</p>
 <p>사용자의 설정은 편의를 위해 브라우저의 로컬 저장소에 저장될 수 있습니다.</p>
@@ -215,6 +223,76 @@ footer.panel{text-align:center}
 </dialog>
 <video id="hiddenV" style="display:none" autoplay muted playsinline></video>
 <canvas id="capCanvas" style="display:none"></canvas>
+<!-- 이미지 매칭 Worker (별도 스레드에서 흑백 NCC 2단계 탐색 수행) -->
+<script id="imgmatch-worker" type="text/plain">
+'use strict';
+const models=new Map();
+function grayPixels(rgba){
+const g=new Float32Array(rgba.length/4);
+for(let p=0,k=0;p<g.length;p++,k+=4)g[p]=.299*rgba[k]+.587*rgba[k+1]+.114*rgba[k+2];
+return g;}
+function grid(w,h,count){
+const points=[];
+for(let j=0;j<Math.min(h,count);j++)for(let i=0;i<Math.min(w,count);i++)
+points.push([Math.floor((i+.5)*w/Math.min(w,count)),Math.floor((j+.5)*h/Math.min(h,count))]);
+return points;}
+function prepare(bytes,w,h){
+const rgba=new Uint8ClampedArray(bytes),g=grayPixels(rgba);
+const points=grid(w,h,8),verify=grid(w,h,48);
+const values=points.map(([x,y])=>g[y*w+x]);
+const mean=values.reduce((a,b)=>a+b,0)/values.length;
+const centered=values.map(v=>v-mean);
+const energy=centered.reduce((s,v)=>s+v*v,0);
+if(energy/points.length<4)throw new Error('FLAT');
+return{w,h,rgba,g,points,verify,centered,energy};}
+function find(model,bytes,W,H){
+const begin=performance.now();
+const rgba=new Uint8ClampedArray(bytes),g=grayPixels(rgba);
+if(model.w>W||model.h>H)throw new Error('TOO_SMALL');
+const{w,h,points,centered,energy,verify}=model;
+const offsets=points.map(([x,y])=>y*W+x),count=offsets.length;
+const candidates=[];let cutoff=.35;
+for(let y=0;y<=H-h;y++){for(let x=0;x<=W-w;x++){
+const base=y*W+x;let sum=0,squares=0,dot=0;
+for(let i=0;i<count;i++){const v=g[base+offsets[i]];sum+=v;squares+=v*v;dot+=v*centered[i];}
+const variance=squares-sum*sum/count;
+if(variance<1)continue;
+const ncc=Math.max(-1,Math.min(1,dot/Math.sqrt(variance*energy)));
+if(ncc<=cutoff)continue;
+let sampleColorDiff=0;
+for(const[px,py]of points){
+const frame=((y+py)*W+x+px)*4,ref=(py*w+px)*4;
+for(let ch=0;ch<3;ch++)sampleColorDiff+=Math.abs(rgba[frame+ch]-model.rgba[ref+ch]);}
+const sampleColor=Math.max(0,1-sampleColorDiff/(count*3*80));
+const rank=Math.min(ncc,.8*ncc+.2*sampleColor);
+if(rank<=cutoff)continue;
+const candidate={x,y,rank};let i=0;
+while(i<candidates.length&&candidates[i].rank>=rank)i++;
+candidates.splice(i,0,candidate);
+if(candidates.length>16)candidates.pop();
+if(candidates.length===16)cutoff=candidates[15].rank;}}
+let best={score:0,x:0,y:0};
+for(const candidate of candidates){
+let a=0,b=0,aa=0,bb=0,ab=0,colorDiff=0;
+for(const[px,py]of verify){
+const target=py*w+px,frame=(candidate.y+py)*W+candidate.x+px;
+const v=g[frame],ref=model.g[target];
+a+=v;b+=ref;aa+=v*v;bb+=ref*ref;ab+=v*ref;
+for(let ch=0;ch<3;ch++)colorDiff+=Math.abs(rgba[frame*4+ch]-model.rgba[target*4+ch]);}
+const n=verify.length,varianceA=aa-a*a/n,varianceB=bb-b*b/n;
+const ncc=varianceA>1&&varianceB>1?Math.max(0,Math.min(1,(ab-a*b/n)/Math.sqrt(varianceA*varianceB))):0;
+const color=Math.max(0,1-colorDiff/(n*3*80));
+const score=Math.min(ncc,.8*ncc+.2*color);
+if(score>best.score)best={score,x:candidate.x,y:candidate.y};}
+return{...best,ms:performance.now()-begin};}
+self.onmessage=({data})=>{
+try{
+if(data.type==='template'){models.set(data.key,prepare(data.pixels,data.w,data.h));self.postMessage({type:'ready',key:data.key});}
+else if(data.type==='clear'){models.delete(data.key);}
+else if(data.type==='frame'){const m=models.get(data.key);if(!m)throw new Error('NO_TEMPLATE');
+self.postMessage({type:'result',key:data.key,req:data.req,...find(m,data.pixels,data.w,data.h)});}
+}catch(err){self.postMessage({type:'error',key:data.key,req:data.req,message:String((err&&err.message)||err)});}};
+</script>
 <script>
 "use strict";
 /* ============ 유틸 ============ */
@@ -252,7 +330,7 @@ box.scrollTop=box.scrollHeight;}};
 document.querySelectorAll(".lvF").forEach(c=>c.onchange=()=>Logger.render());
 $("btnLogClear").onclick=()=>{Logger.list=[];Logger.render();};
 $("btnLogCopy").onclick=async()=>{const t=Logger.list.map(e=>JSON.stringify(e)).join("\n");
-try{await navigator.clipboard.writeText(t);alert("로그가 복사되었습니다.");}catch(e){openDlg("로그 복사","",t,false);}};
+try{await navigator.clipboard.writeText(t);alert("기록이 복사되었습니다.");}catch(e){openDlg("기록 복사","",t,false);}};
 /* ============ AlarmManager (WebAudio, 10종) ============ */
 const Alarm={ctx:null,repeatTimers:{},delayTimers:{},trigger:{},
 ensure(){if(!this.ctx){try{this.ctx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){Logger.log("ERROR","알람","ALARM_CTX_FAIL","오디오 컨텍스트 생성 실패",{actual:String(e),suggestedAction:"브라우저 오디오 허용 확인"});return false;}}
@@ -372,14 +450,192 @@ const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=w||ny>=h)continue;const q=ny*w+nx;
 if(mask[q]&&seen[q]===-1){seen[q]=1;stack.push(q);}}}
 if(size>best)best=size;}
 return best;}
+/* ============ 이미지 인식 (Worker 흑백 NCC 2단계 매칭, 스케일 탐색 없음) ============ */
+const ImgWorker={w:null,seq:0,pend:new Map(),
+ensure(){if(this.w)return true;
+if(!window.Worker||!$("imgmatch-worker"))return false;
+try{const url=URL.createObjectURL(new Blob([$("imgmatch-worker").textContent],{type:"text/javascript"}));
+this.w=new Worker(url);URL.revokeObjectURL(url);
+this.w.onmessage=e=>this.onmsg(e.data);
+this.w.onerror=()=>{for(const[,r]of this.pend)r({error:true,message:"WORKER_FAIL"});this.pend.clear();};
+return true;}catch(e){this.w=null;return false;}},
+onmsg(d){if(d.type==="result"){const r=this.pend.get(d.req);if(r){this.pend.delete(d.req);r(d);}}
+else if(d.type==="ready"){const r=this.pend.get("tpl:"+d.key);if(r){this.pend.delete("tpl:"+d.key);r({ok:true});}}
+else if(d.type==="error"){if(d.req!==undefined){const r=this.pend.get(d.req);if(r){this.pend.delete(d.req);r({error:true,message:d.message});}}
+else if(d.key!==undefined){const r=this.pend.get("tpl:"+d.key);if(r){this.pend.delete("tpl:"+d.key);r({error:true,message:d.message});}}}},
+register(p){return new Promise(res=>{if(!p.imgTpl||!p.imgTpl.data||!this.ensure()){res({error:true,message:"NO_WORKER"});return;}
+const im=new Image();
+im.onload=()=>{try{const cv=document.createElement("canvas");cv.width=im.width;cv.height=im.height;
+const x=cv.getContext("2d");x.drawImage(im,0,0);
+const dd=x.getImageData(0,0,cv.width,cv.height);
+const k="tpl:"+p.id;this.pend.set(k,res);
+this.w.postMessage({type:"template",key:p.id,w:cv.width,h:cv.height,pixels:dd.data.buffer},[dd.data.buffer]);
+setTimeout(()=>{if(this.pend.has(k)){this.pend.delete(k);res({error:true,message:"TIMEOUT"});}},8000);}catch(e){res({error:true,message:String(e)});}};
+im.onerror=()=>res({error:true,message:"DECODE_FAIL"});im.src=p.imgTpl.data;});},
+clear(key){try{this.w&&this.w.postMessage({type:"clear",key});}catch(e){}},
+match(p,img){return new Promise(res=>{if(!this.w){res(null);return;}
+const req=++this.seq;this.pend.set(req,res);
+try{this.w.postMessage({type:"frame",key:p.id,req,w:p.roi.w,h:p.roi.h,pixels:img.data.buffer},[img.data.buffer]);}
+catch(e){this.pend.delete(req);res(null);return;}
+setTimeout(()=>{if(this.pend.has(req)){this.pend.delete(req);res(null);}},8000);});},
+reset(){for(const[,r]of this.pend)r(null);this.pend.clear();}};
+function bootImgTemplates(list){(list||[]).forEach(p=>{if(p.mode==="img"&&p.imgTpl&&p.imgTpl.data)ImgWorker.register(p);});}
+function boxHit(b,fx,fy,t){const L=Math.abs(fx-b.x)<t,R=Math.abs(fx-(b.x+b.w))<t,T=Math.abs(fy-b.y)<t,B=Math.abs(fy-(b.y+b.h))<t;
+if(!(fx>b.x-t&&fx<b.x+b.w+t&&fy>b.y-t&&fy<b.y+b.h+t))return null;
+if(L&&T)return"nw";if(R&&T)return"ne";if(L&&B)return"sw";if(R&&B)return"se";
+if(L)return"w";if(R)return"e";if(T)return"n";if(B)return"s";
+if(fx>b.x&&fx<b.x+b.w&&fy>b.y&&fy<b.y+b.h)return"move";return null;}
+const ImgCap={pid:null,box:null,
+start(p){if(!window.Worker){alert("이 브라우저는 이미지 인식을 지원하지 않습니다. Chrome/Edge를 사용하세요.");return;}
+if(Brush.pid===p.id){alert("색 추출 중에는 영역 캡처를 시작할 수 없습니다.");return;}
+const live=Cap.running&&Cap.frameW,fz=p.frozen&&p.frozenCanvas;
+if(!live&&!fz){alert("먼저 화면 공유를 시작하거나 현재 화면으로 고정하세요.");return;}
+if(!p.roi.w||!p.roi.h){alert("감지 영역이 유효하지 않습니다.");return;}
+const r=p.roi;
+const bw=clamp(Math.round(r.w/2),16,r.w),bh=clamp(Math.round(r.h/2),16,r.h);
+this.pid=p.id;this.box={x:r.x+Math.round((r.w-bw)/2),y:r.y+Math.round((r.h-bh)/2),w:bw,h:bh};
+CapPv.drag=null;Preview.renderAll();
+Logger.log("INFO","이미지","IMG_CAPTURE_START","캡처 영역 선택 시작: "+p.name,{presetId:p.id,presetName:p.name});},
+clear(){this.pid=null;this.box=null;CapPv.drag=null;},
+cancel(){if(!this.pid)return;const p=presets.find(q=>q.id===this.pid);
+this.clear();Preview.renderAll();
+if(p)paintTplThumb(p);
+if(p)Logger.log("INFO","이미지","IMG_CAPTURE_CANCEL","캡처 취소: "+p.name,{presetId:p.id});},
+save(){const p=presets.find(q=>q.id===this.pid);const b=this.box;if(!p||!b)return;
+if(b.w<8||b.h<8){alert("캡처 영역이 너무 작습니다 (8×8 이상).");return;}
+try{const fz=p.frozen&&p.frozenCanvas;
+const srcC=fz?p.frozenCanvas:Cap.cap;
+if(!fz&&(!Cap.running||!Cap.frameW)){alert("화면 공유가 중단되었습니다.");return;}
+const SW=srcC.width||1,SH=srcC.height||1;
+const cx=clamp(b.x,0,SW-1),cy=clamp(b.y,0,SH-1);
+const cw=clamp(b.w,1,SW-cx),ch=clamp(b.h,1,SH-cy);
+if(cw<8||ch<8){alert("캡처 영역이 너무 작습니다 (8×8 이상).");return;}
+const src=srcC.getContext("2d",{willReadFrequently:true});
+const crop=src.getImageData(cx,cy,cw,ch);
+const px=crop.data,n=cw*ch;let m=0;
+for(let i=0;i<n;i++)m+=0.299*px[i*4]+0.587*px[i*4+1]+0.114*px[i*4+2];
+m/=n;let v=0;
+for(let i=0;i<n;i++){const g=0.299*px[i*4]+0.587*px[i*4+1]+0.114*px[i*4+2];v+=(g-m)*(g-m);}
+if(v/n<4){alert("무늬가 너무 적은 영역입니다. 아이콘이나 글자를 포함해 다시 캡처하세요.");return;}
+const cv=document.createElement("canvas");cv.width=cw;cv.height=ch;
+cv.getContext("2d").putImageData(crop,0,0);
+const url=cv.toDataURL("image/png");
+if(url.length>400000){alert("이미지가 너무 커서 저장할 수 없습니다. 캡처 영역을 줄여주세요.");return;}
+p.imgTpl={w:cw,h:ch,data:url};
+p.hist=[];p.cont=0;p.peak=0;p._match=null;saveSoon();this.clear();
+ImgWorker.register(p).then(rr=>{if(rr.error)alert("이미지 등록 실패: "+(rr.message||"Worker 오류"));});
+refreshCardBody(p);
+Logger.log("INFO","이미지","IMG_TEMPLATE_SAVE","기준 이미지 저장: "+p.name+" ("+cw+"×"+ch+")",{presetId:p.id,presetName:p.name,tpl:{w:cw,h:ch}});}
+catch(e){alert("캡처 저장 실패: "+e.message);
+Logger.log("ERROR","이미지","IMG_TEMPLATE_SAVE_FAIL","기준 이미지 저장 실패",{presetId:p.id,actual:String(e)});}}};
+const CapPv={drag:null,
+pos(e,p,cv){const r=cv.getBoundingClientRect();if(!r.width||!p.roi.w)return null;
+return{fx:(e.clientX-r.left)*p.roi.w/r.width,fy:(e.clientY-r.top)*p.roi.h/r.height,t:Math.max(2,10*p.roi.w/r.width)};},
+relBox(p){const ib=ImgCap.box;return{x:ib.x-p.roi.x,y:ib.y-p.roi.y,w:ib.w,h:ib.h};},
+down(e,p){const cv=$("pv-"+p.id);if(!cv)return false;
+if(Brush.pid===p.id)return Brush.down(e,p);
+if(!(ImgCap.pid===p.id&&ImgCap.box))return false;
+const q=this.pos(e,p,cv);if(!q)return false;
+const h=boxHit(this.relBox(p),q.fx,q.fy,q.t);if(!h)return false;
+e.preventDefault();this.drag={pid:p.id,h,s:this.relBox(p),sfx:q.fx,sfy:q.fy,moved:false};
+cv.style.cursor=RoiDrag.cursor(h);try{cv.setPointerCapture(e.pointerId);}catch(_){}return true;},
+move(e,p){const cv=$("pv-"+p.id);const d=this.drag;
+if(Brush.pid===p.id){Brush.move(e,p);return;}
+if(!d||d.pid!==p.id){if(cv&&ImgCap.pid===p.id&&ImgCap.box){const q=this.pos(e,p,cv);
+if(q){const h=boxHit(this.relBox(p),q.fx,q.fy,q.t);cv.style.cursor=h?RoiDrag.cursor(h):"default";}}return;}
+const q=this.pos(e,p,cv);if(!q)return;
+const W=p.roi.w,H=p.roi.h;const s=d.s,h=d.h;let b={x:s.x,y:s.y,w:s.w,h:s.h};
+if(h==="move"){b.x=s.x+(q.fx-d.sfx);b.y=s.y+(q.fy-d.sfy);}
+else{if(h.includes("e"))b.w=q.fx-b.x;if(h.includes("s"))b.h=q.fy-b.y;
+if(h.includes("w")){b.w=(s.x+s.w)-q.fx;b.x=q.fx;}if(h.includes("n")){b.h=(s.y+s.h)-q.fy;b.y=q.fy;}}
+b.x=clamp(Math.round(b.x),0,W-1);b.y=clamp(Math.round(b.y),0,H-1);
+b.w=clamp(Math.round(b.w),1,W-b.x);b.h=clamp(Math.round(b.h),1,H-b.y);
+ImgCap.box={x:p.roi.x+b.x,y:p.roi.y+b.y,w:b.w,h:b.h};d.moved=true;
+Preview.renderOne(p);},
+up(){Brush.up();
+if(this.drag&&this.drag.moved&&ImgCap.box)Logger.log("DEBUG","이미지","IMG_CAPBOX","캡처 영역 조정 ("+ImgCap.box.x+","+ImgCap.box.y+","+ImgCap.box.w+"×"+ImgCap.box.h+")",{roi:{...ImgCap.box}});
+if(this.drag){const cv=$("pv-"+this.drag.pid);if(cv)cv.style.cursor="default";}
+this.drag=null;}};
+function setMode(p,m){if(p.mode===m)return;p.mode=m;p.hist=[];p.cont=0;p.state="OFF";p.avg=0;p.cur=0;p.peak=0;p._match=null;saveSoon();refreshCardBody(p);
+Logger.log("INFO","이미지","MODE_SWITCH","인식 방식 전환: "+p.name+" → "+(m==="img"?"이미지 인식":"색상 인식"),{presetId:p.id,presetName:p.name,mode:m});}
+function imgPanel(p){const d=document.createElement("div");d.className="imgPanel";
+d.innerHTML=`<b>이미지 인식 (Worker)</b>
+<div class="kv"><label class="mut">이 정도 비슷하면 감지 (%)</label><input type="range" data-f="imgThR" min="50" max="100" step="1" value="${p.imgTh}" style="width:140px"><input type="number" data-f="imgThN" value="${p.imgTh}" min="50" max="100" step="1" style="width:64px"></div>
+<div class="kv"><span class="mut">최고 유사도 <b data-r="peak">${p.peak||0}%</b> · 권장 <b data-r="rec">-</b></span><button class="mini" data-a="applyRec">권장 적용</button></div>
+<div class="row" style="margin-bottom:10px"><button class="mini" data-a="capStart">영역 캡처</button><button class="mini primary" data-a="capSave">저장</button><button class="mini" data-a="capCancel">취소</button><button class="mini danger" data-a="capDel">삭제</button></div>
+<div class="row" style="margin-top:4px"><canvas data-r="tplThumb" style="width:320px;max-width:100%;image-rendering:pixelated;border:1px solid var(--line);border-radius:6px;background:#000"></canvas></div>`;
+const r=d.querySelector('[data-f="imgThR"]'),n=d.querySelector('[data-f="imgThN"]');
+const set=v=>{v=clamp(Math.round(+v||99),50,100);p.imgTh=v;r.value=v;n.value=v;saveSoon();};
+r.oninput=()=>set(r.value);n.onchange=()=>set(n.value);
+d.querySelector('[data-a="capStart"]').onclick=()=>ImgCap.start(p);
+d.querySelector('[data-a="capSave"]').onclick=()=>ImgCap.save();
+d.querySelector('[data-a="capCancel"]').onclick=()=>ImgCap.cancel();
+d.querySelector('[data-a="capDel"]').onclick=()=>{p.imgTpl=null;p._match=null;p.hist=[];p.cont=0;p.peak=0;ImgWorker.clear(p.id);saveSoon();refreshCardBody(p);
+Logger.log("INFO","이미지","IMG_TEMPLATE_DELETE","기준 이미지 삭제: "+p.name,{presetId:p.id});};
+d.querySelector('[data-a="applyRec"]').onclick=()=>{const pk=p.peak||0;
+if(pk<52){alert("타깃이 보이는 상태에서 최고 유사도를 먼저 확인하세요. (현재 "+pk+"%)");return;}
+set(clamp(Math.round(pk)-2,50,100));};
+paintTplThumb(p,d);
+return d;}
+function paintTplThumb(p,root){const scope=root||$("card-"+p.id);if(!scope||!scope.querySelector)return;
+const c=scope.querySelector('[data-r="tplThumb"]');if(!c)return;
+if(!p.imgTpl||!p.imgTpl.data){c.width=160;c.height=40;const x=c.getContext("2d");
+x.fillStyle="#000";x.fillRect(0,0,160,40);x.fillStyle="#888";x.font="12px sans-serif";x.fillText("미등록",8,24);return;}
+const im=new Image();im.onload=()=>{c.width=im.width;c.height=im.height;c.getContext("2d").drawImage(im,0,0);};im.src=p.imgTpl.data;}
+function updateCapThumbLive(p){if(!(ImgCap.pid===p.id&&ImgCap.box))return;
+const scope=$("card-"+p.id);if(!scope||!scope.querySelector)return;
+const c=scope.querySelector('[data-r="tplThumb"]');if(!c)return;
+const srcC=(p.frozen&&p.frozenCanvas)?p.frozenCanvas:(Cap.running?Cap.cap:null);
+if(!srcC||!srcC.width||!srcC.height)return;
+const b=ImgCap.box;
+const cx=clamp(b.x,0,srcC.width-1),cy=clamp(b.y,0,srcC.height-1);
+const cw=clamp(b.w,1,srcC.width-cx),ch=clamp(b.h,1,srcC.height-cy);
+if(cw<1||ch<1)return;
+try{if(c.width!==cw||c.height!==ch){c.width=cw;c.height=ch;}
+const x=c.getContext("2d");x.imageSmoothingEnabled=false;
+x.clearRect(0,0,cw,ch);x.drawImage(srcC,cx,cy,cw,ch,0,0,cw,ch);}catch(e){}}
+async function analyzeImg(p,src){const t0=performance.now();
+if(!p.imgTpl||!p.imgTpl.data){p.cur=0;return;}
+if(!src){p.cur=0;return;}
+let img;try{img=src.getImageData(p.roi.x,p.roi.y,p.roi.w,p.roi.h);}catch(e){
+Logger.log("ERROR","ROI","ROI_READ_FAIL","ROI 픽셀 읽기 실패",{presetId:p.id,presetName:p.name,roi:{...p.roi},actual:String(e)});return;}
+const dd=img.data;let black=true;
+for(let i=0;i<dd.length;i+=4){if(dd[i]||dd[i+1]||dd[i+2]){black=false;break;}}
+if(black){p.cur=0;return;}
+const r=await ImgWorker.match(p,img);
+if(!r)return;
+if(r.error){if(r.message==="NO_TEMPLATE")return;
+p.cur=0;const avg0=Analysis.pushHistAvg(p,0);
+Analysis.finishDetect(p,false,avg0,{mode:"img",avgTicks:p.avgTicks,imgTh:p.imgTh,contTicks:p.contTicks},t0);return;}
+const sim=Math.round(r.score*100);
+p.cur=sim;if(sim>(p.peak||0))p.peak=sim;
+p._match={x:r.x,y:r.y,w:p.imgTpl.w,h:p.imgTpl.h,score:r.score};
+const avg=Analysis.pushHistAvg(p,sim);
+const effTh=Math.max(50,p.state==="ON"?p.imgTh-5:p.imgTh);
+Analysis.finishDetect(p,avg>=effTh,avg,{mode:"img",avgTicks:p.avgTicks,imgTh:p.imgTh,contTicks:p.contTicks},t0);}
+function renderOneImgLive(p,cv,x,dw,dh,sc,W,H){
+const srcC=(p.frozen&&p.frozenCanvas)?p.frozenCanvas:(Cap.running?Cap.cap:null);
+if(!srcC){x.fillStyle="#000";x.fillRect(0,0,dw,dh);x.fillStyle="#888";x.font="12px sans-serif";
+x.fillText(p.imgTpl?"대기 중":"이미지 미등록 - 영역 캡처 필요",8,20);}
+else{try{x.imageSmoothingEnabled=true;x.clearRect(0,0,dw,dh);
+x.drawImage(srcC,p.roi.x,p.roi.y,W,H,0,0,dw,dh);}catch(e){
+x.fillStyle="#000";x.fillRect(0,0,dw,dh);}}
+if(p._match&&ImgCap.pid!==p.id){const m=p._match;x.strokeStyle="#00e676";x.lineWidth=Math.max(1,2*sc);
+x.strokeRect(m.x*sc,m.y*sc,m.w*sc,m.h*sc);
+x.font="12px sans-serif";x.fillStyle="#00e676";x.fillText(Math.round(m.score*100)+"%",m.x*sc+4,m.y*sc+14);}
+if(ImgCap.pid===p.id&&ImgCap.box){const cb=ImgCap.box;
+const cx=(cb.x-p.roi.x)*sc,cy=(cb.y-p.roi.y)*sc;
+x.save();x.setLineDash([6,4]);x.strokeStyle="#00ffc8";x.lineWidth=1;
+x.strokeRect(cx,cy,cb.w*sc,cb.h*sc);x.setLineDash([]);x.restore();}
+if(ImgCap.pid===p.id&&ImgCap.box)updateCapThumbLive(p);}
 /* ============ PresetManager / StorageManager ============ */
 const DEF_HSV=()=>({hMin:155,hMax:203,sMin:.41,sMax:.74,vMin:.43,vMax:.68,color:"#ff2d2d"});
-const SCHEMA=1,LSKEY="screenDetector.v1";
+const SCHEMA=2,LSKEY="screenDetector.v1";
 let presets=[],common={interval:500,pvMax:320,uiScale:1};
 function defaultPreset(name){return{id:uid("preset"),name:name||("감지 카드 "+(presets.length+1)),enabled:true,
-roi:{x:0,y:0,w:320,h:240},hsv:[DEF_HSV()],avgTicks:1,thMin:100,thMax:200,contTicks:1,alarmDelay:0,blendColors:null,calcMode:"c8",
-state:"OFF",avg:0,cur:0,cont:0,hist:[],alarmEdge:"on",alarmType:1,repeat:false,frozen:false,frozenCanvas:null};}
-function serializePreset(p){return{v:SCHEMA,kind:"preset",preset:{id:p.id,name:p.name,enabled:p.enabled,roi:p.roi,hsv:p.hsv.map(h=>({...h})),avgTicks:p.avgTicks,thMin:p.thMin,thMax:p.thMax,contTicks:p.contTicks,alarmDelay:(p.alarmDelay||0),calcMode:p.calcMode||"c8",blendColors:p.blendColors||null,alarmEdge:p.alarmEdge,alarmType:p.alarmType,repeat:p.repeat}};}
+roi:{x:0,y:0,w:320,h:240},hsv:[DEF_HSV()],avgTicks:1,thMin:100,thMax:200,contTicks:1,alarmDelay:0,blendColors:null,calcMode:"c8",mode:"img",imgTh:99,imgTpl:null,
+state:"OFF",avg:0,cur:0,cont:0,peak:0,hist:[],alarmEdge:"on",alarmType:1,repeat:false,frozen:false,frozenCanvas:null};}
+function serializePreset(p){return{v:SCHEMA,kind:"preset",preset:{id:p.id,name:p.name,enabled:p.enabled,roi:p.roi,hsv:p.hsv.map(h=>({...h})),avgTicks:p.avgTicks,thMin:p.thMin,thMax:p.thMax,contTicks:p.contTicks,alarmDelay:(p.alarmDelay||0),calcMode:p.calcMode||"c8",blendColors:p.blendColors||null,alarmEdge:p.alarmEdge,alarmType:p.alarmType,repeat:p.repeat,mode:p.mode||"hsv",imgTh:(p.imgTh==null?99:p.imgTh),imgTpl:p.imgTpl||null}};}
 function validatePresetObj(o){const errs=[];
 if(!o||typeof o!=="object")return["최상위 객체가 아님"];
 const p=o.kind==="preset"?o.preset:o;
@@ -397,6 +653,9 @@ const cm=p.calcMode||"c8";if(!["c4","c8","all"].includes(cm))errs.push("calcMode
 const ad=p.alarmDelay==null?0:+p.alarmDelay;if(!(ad>=0&&ad<=120))errs.push("alarmDelay 0~120");
 if(p.blendColors!=null&&!(Array.isArray(p.blendColors)&&p.blendColors.length===3&&p.blendColors.every(s=>typeof s==="string")))errs.push("blendColors 형식 오류");
 if(!["on","off","both","none"].includes(p.alarmEdge))errs.push("alarmEdge 값 오류");
+if(!["hsv","img"].includes(p.mode||"hsv"))errs.push("mode 값 오류");
+const it=p.imgTh==null?99:+p.imgTh;if(!(it>=50&&it<=100))errs.push("imgTh 50~100");
+if(p.imgTpl!=null&&!(p.imgTpl&&Number.isFinite(+p.imgTpl.w)&&+p.imgTpl.w>0&&Number.isFinite(+p.imgTpl.h)&&+p.imgTpl.h>0&&typeof p.imgTpl.data==="string"&&p.imgTpl.data.startsWith("data:image/")))errs.push("imgTpl 형식 오류");
 if(!(p.alarmType>=1&&p.alarmType<=10))errs.push("alarmType 1~10");
 return errs;}
 function presetFromObj(o){const p=o.kind==="preset"?o.preset:o;
@@ -405,19 +664,23 @@ n.roi={x:+p.roi.x|0,y:+p.roi.y|0,w:Math.max(1,+p.roi.w|0),h:Math.max(1,+p.roi.h|
 n.hsv=p.hsv.map((h,i)=>{const a=normH360(h.hMin),b=normH360(h.hMax);
 return{hMin:Math.min(a,b),hMax:Math.max(a,b),sMin:+h.sMin,sMax:+h.sMax,vMin:+h.vMin,vMax:+h.vMax,color:h.color||maskColor(i)};});
 n.avgTicks=+p.avgTicks;n.thMin=+p.thMin;n.thMax=+p.thMax;n.contTicks=+p.contTicks;
+n.mode=p.mode==="img"?"img":"hsv";n.imgTh=clamp(+(p.imgTh==null?99:p.imgTh),50,100);
+n.imgTpl=(p.imgTpl&&p.imgTpl.data)?{w:Math.max(1,+p.imgTpl.w|0),h:Math.max(1,+p.imgTpl.h|0),data:String(p.imgTpl.data)}:null;
 n.alarmEdge=p.alarmEdge;n.alarmType=clamp(Math.round(+p.alarmType)||1,1,10);n.repeat=!!p.repeat;n.alarmDelay=clamp(+(p.alarmDelay||0),0,120);n.calcMode=["c4","c8","all"].includes(p.calcMode)?p.calcMode:"c8";n.blendColors=(Array.isArray(p.blendColors)&&p.blendColors.length===3)?p.blendColors.map(String):null;n.id=uid("preset");return n;}
 const saveSoon=debounce(()=>saveNow(),600);
 function saveNow(){try{const data={v:SCHEMA,common,presets:presets.map(p=>serializePreset(p).preset)};
 localStorage.setItem(LSKEY,JSON.stringify(data));}
 catch(e){Logger.log("ERROR","저장","STORAGE_SAVE_FAIL","자동 저장 실패",{actual:String(e),possibleCauses:["용량 초과","비공개 모드"],suggestedAction:"불필요한 프리셋 삭제 후 재시도"});alert("자동 저장 실패: "+e.message);}}
 function loadSaved(){try{const t=localStorage.getItem(LSKEY);if(!t)return false;
-const d=JSON.parse(t);if(d.v!==SCHEMA){Logger.log("WARN","저장","STORAGE_VERSION_MISMATCH","스키마 버전 불일치",{actual:"v="+d.v,suggestedAction:"기본값으로 시작"});return false;}
+const d=JSON.parse(t);if(d.v!==1&&d.v!==SCHEMA){Logger.log("WARN","저장","STORAGE_VERSION_MISMATCH","스키마 버전 불일치",{actual:"v="+d.v,suggestedAction:"기본값으로 시작"});return false;}
+if(d.v===1)Logger.log("INFO","저장","STORAGE_MIGRATED","구버전(v1) 설정을 v2로 마이그레이션",{});
 common.interval=clamp(+d.common?.interval||500,50,10000);$("inInterval").value=common.interval;
 common.pvMax=clamp(+d.common?.pvMax||320,80,1080);$("inPvMax").value=common.pvMax;
 common.uiScale=clamp(+d.common?.uiScale||1,0.5,1.5);
 presets=(d.presets||[]).map(p=>{const errs=validatePresetObj({kind:"preset",preset:p});
 if(errs.length){Logger.log("WARN","저장","STORAGE_PRESET_SKIP","저장된 프리셋 건너뜀: "+errs.join(";"),{});return null;}
 const n=presetFromObj({kind:"preset",preset:p});return n;}).filter(Boolean);
+bootImgTemplates(presets);
 Logger.log("INFO","저장","STORAGE_LOADED","자동 저장 복원: 프리셋 "+presets.length+"개",{});return true;}
 catch(e){Logger.log("ERROR","저장","STORAGE_LOAD_FAIL","자동 저장 복원 실패",{actual:String(e)});return false;}}
 /* ============ CaptureManager ============ */
@@ -442,6 +705,7 @@ clampAllRois();sizeOverlay();}},
 stop(reason){if(this.stream){this.stream.getTracks().forEach(t=>t.stop());this.stream=null;}
 this.video.srcObject=null;$("originVideo").srcObject=null;this.running=false;
 clearInterval(this.loopId);this.loopId=null;
+ImgWorker.reset();
 Alarm.stopAll();
 $("resLabel").textContent="-";
 Logger.log("INFO","캡처","CAPTURE_STOP","화면 공유 종료"+(reason?": "+reason:""),{});
@@ -455,7 +719,7 @@ $("btnShare").onclick=()=>Cap.start();
 $("btnFoldOrigin").onclick=()=>{const b=$("originBody");const hide=b.style.display!=="none";b.style.display=hide?"none":"";$("btnFoldOrigin").textContent=hide?"펼치기":"접기";};
 $("btnStopShare").onclick=()=>Cap.stop("사용자 중지");
 $("inInterval").onchange=e=>{common.interval=clamp(+e.target.value||500,50,10000);e.target.value=common.interval;
-Cap.restartLoop();saveSoon();Logger.log("INFO","감지","CONFIG_INTERVAL","공통 분석 주기 변경: "+common.interval+"ms",{settings:{interval:common.interval}});};
+Cap.restartLoop();saveSoon();Logger.log("INFO","감지","CONFIG_INTERVAL","분석 간격 변경: "+common.interval+"ms",{settings:{interval:common.interval}});};
 $("inPvMax").onchange=e=>{common.pvMax=clamp(+e.target.value||320,80,1080);e.target.value=common.pvMax;
 saveSoon();Logger.log("INFO","감지","CONFIG_PVMAX","미리보기 최대 크기 변경: "+common.pvMax+"px (표시용 축소, 감지는 원본 해상도)",{settings:{pvMax:common.pvMax}});};
 /* ============ AnalysisEngine + DetectionEngine ============ */
@@ -468,8 +732,8 @@ const t0=performance.now();
 try{Cap.updateRes();
 let ctx=null;const needLive=presets.some(p=>p.enabled&&!p.frozen);
 if(Cap.running&&needLive)ctx=Cap.grab();
-for(const p of presets){if(!p.enabled)continue;try{this.analyzeOne(p,ctx);}catch(e){
-Logger.log("ERROR","군집 분석","ANALYSIS_PRESET_FAIL","프리셋 분석 실패: "+p.name,{presetId:p.id,presetName:p.name,actual:String(e)});}}
+for(const p of presets){if(!p.enabled)continue;try{await this.analyzeOne(p,ctx);}catch(e){
+Logger.log("ERROR","감지 분석","ANALYSIS_PRESET_FAIL","프리셋 분석 실패: "+p.name,{presetId:p.id,presetName:p.name,actual:String(e)});}}
 Preview.renderAll(ctx);}finally{
 const dt=performance.now()-t0;
 $("perfLabel").textContent=dt.toFixed(1)+"ms / 지연 "+delayCount+"회";
@@ -478,7 +742,16 @@ const w=$("perfWarn");w.textContent=bad?"지연 경고":"정상";w.className="ba
 if(bad)w.style.background="#5a3a10",w.style.color="#ffb020";else w.style.background="",w.style.color="";
 if(bad)Logger.log("WARN","감지","ANALYSIS_SLOW","분석 지연: 소요 "+dt.toFixed(0)+"ms > 주기 "+common.interval+"ms (주기는 자동 변경하지 않음)",{timing:{ms:+dt.toFixed(1),interval:common.interval,delayCount},suggestedAction:"ROI 축소·주기 증가·프리셋 비활성화를 검토"});
 analysisBusy=false;}},
-analyzeOne(p,liveCtx){const t0=performance.now();
+pushHistAvg(p,v){p.hist.push(v);if(p.hist.length>p.avgTicks)p.hist.shift();
+const a=p.hist.length?p.hist.reduce((x,y)=>x+y,0)/p.hist.length:0;p.avg=Math.round(a);return a;},
+finishDetect(p,ok,avg,settings,t0){if(ok)p.cont++;else p.cont=0;
+const prev=p.state;
+if(ok&&p.cont>=p.contTicks)p.state="ON";else if(!ok)p.state="OFF";
+if(prev!==p.state){Logger.log("INFO","감지","DETECT_"+p.state,"감지 "+p.state+": "+p.name+" (평균 "+p.avg+", 값 "+p.cur+")",
+{presetId:p.id,presetName:p.name,settings,timing:{ms:+(performance.now()-t0).toFixed(1)}});
+Alarm.notify(p,p.state);}
+updatePresetStats(p);},
+async analyzeOne(p,liveCtx){const t0=performance.now();
 const FW=p.frozen&&p.frozenCanvas?p.frozenCanvas.width:Cap.frameW;
 const FH=p.frozen&&p.frozenCanvas?p.frozenCanvas.height:Cap.frameH;
 if(!FW||!FH)return;
@@ -489,6 +762,7 @@ if(clamped.x!==r.x||clamped.y!==r.y||clamped.w!==r.w||clamped.h!==r.h){
 Logger.log("ERROR","ROI","ANALYSIS_ROI_OUT_OF_BOUNDS","ROI가 프레임 경계를 벗어남: "+p.name,
 {presetId:p.id,presetName:p.name,frame:{width:FW,height:FH},roi:{...r},expected:"ROI must fit within the source frame",actual:"ROI exceeds frame boundaries → clamped",possibleCauses:["캡처 해상도 변경","ROI 설정 초과"],suggestedAction:"Clamp ROI to valid frame bounds and notify user"});
 p.roi=clamped;refreshPresetCard(p);saveSoon();}
+if(p.mode==="img"){await analyzeImg(p,p.frozen&&p.frozenCanvas?p.frozenCanvas.getContext("2d",{willReadFrequently:true}):liveCtx);return;}
 const src=p.frozen&&p.frozenCanvas?p.frozenCanvas.getContext("2d",{willReadFrequently:true}):liveCtx;
 if(!src){p.cur=0;return;}
 let img;try{img=src.getImageData(p.roi.x,p.roi.y,p.roi.w,p.roi.h);}catch(e){
@@ -503,16 +777,8 @@ let blob;
 if(p.calcMode==="all"){let s=0;for(let i=0;i<union.length;i++)s+=union[i];blob=s;}
 else blob=largestBlob(union,W,H,p.calcMode!=="c4");
 p.cur=blob;p._perMasks=per;p._img=img;
-p.hist.push(blob);if(p.hist.length>p.avgTicks)p.hist.shift();
-const avg=p.hist.length?p.hist.reduce((a,b)=>a+b,0)/p.hist.length:0;p.avg=Math.round(avg);
-const ok=avg>=p.thMin&&avg<=p.thMax;
-if(ok)p.cont++;else p.cont=0;
-const prev=p.state;
-if(ok&&p.cont>=p.contTicks)p.state="ON";else if(!ok)p.state="OFF";
-if(prev!==p.state){Logger.log("INFO","감지","DETECT_"+p.state,"감지 "+p.state+": "+p.name+" (평균 "+p.avg+", 값 "+p.cur+")",
-{presetId:p.id,presetName:p.name,settings:{avgTicks:p.avgTicks,thMin:p.thMin,thMax:p.thMax,contTicks:p.contTicks},timing:{ms:+(performance.now()-t0).toFixed(1)}});
-Alarm.notify(p,p.state);}
-updatePresetStats(p);}};
+const avg=this.pushHistAvg(p,blob);
+this.finishDetect(p,avg>=p.thMin&&avg<=p.thMax,avg,{avgTicks:p.avgTicks,thMin:p.thMin,thMax:p.thMax,contTicks:p.contTicks},t0);}};
 function clampAllRois(){if(!Cap.frameW)return;let changed=false;
 for(const p of presets){const FW=Cap.frameW,FH=Cap.frameH;const r=p.roi;
 const nx=clamp(r.x,0,FW-1),ny=clamp(r.y,0,FH-1);
@@ -522,17 +788,22 @@ Logger.log("WARN","ROI","ROI_CLAMPED","해상도 변경으로 ROI 제한: "+p.na
 if(changed){presets.forEach(refreshPresetCard);saveSoon();alert("해상도 변경으로 일부 감지 영역이 유효 범위로 제한되었습니다.");}}
 /* ============ PreviewRenderer ============ */
 function sizeOverlay(){const v=$("originVideo"),c=$("originOverlay");
-const r=v.getBoundingClientRect();c.width=Math.max(2,r.width);c.height=Math.max(2,r.height);
-c.style.width=r.width+"px";c.style.height=r.height+"px";}
+const w=v.videoWidth||0,h=v.videoHeight||0;if(!w||!h)return;
+if(c.width!==w)c.width=w;if(c.height!==h)c.height=h;}
 window.addEventListener("resize",sizeOverlay);
 const Preview={renderAll(liveCtx){this.renderOrigin();for(const p of presets)this.renderOne(p);},
 renderOrigin(){const v=$("originVideo"),c=$("originOverlay");if(!v.videoWidth){return;}
 sizeOverlayOnce();const x=c.getContext("2d");x.clearRect(0,0,c.width,c.height);
 const sx=c.width/v.videoWidth,sy=c.height/v.videoHeight;
 presets.forEach((p,i)=>{if(!p.enabled)return;const r=p.roi;
-x.strokeStyle=maskColor(i,null);
-x.lineWidth=2;x.strokeRect(r.x*sx,r.y*sy,r.w*sx,r.h*sy);
-x.fillStyle=x.strokeStyle;x.font="12px sans-serif";x.fillText(p.name,r.x*sx+4,r.y*sy+14);});},
+const col=maskColor(i,null);const rgb=hexRgb(col);
+const k=v.videoWidth/((c.clientWidth||c.width)||v.videoWidth);
+x.fillStyle="rgba("+rgb[0]+","+rgb[1]+","+rgb[2]+",0.18)";
+x.fillRect(r.x*sx,r.y*sy,r.w*sx,r.h*sy);
+x.strokeStyle=col;x.lineWidth=Math.max(2,2*k);x.strokeRect(r.x*sx,r.y*sy,r.w*sx,r.h*sy);
+const fs=Math.max(12,Math.round(12*k));x.font=fs+"px sans-serif";const tw=x.measureText(p.name).width;
+x.fillStyle="rgba(0,0,0,0.65)";x.fillRect(r.x*sx+2*k,r.y*sy+2*k,tw+8*k,fs+4*k);
+x.fillStyle="#fff";x.fillText(p.name,r.x*sx+6*k,r.y*sy+2*k+fs);});},
 renderOne(p){const cv=$("pv-"+p.id);if(!cv)return;
 if(!p.roi.w||!p.roi.h)return;
 const W=p.roi.w,H=p.roi.h;
@@ -543,6 +814,7 @@ const dw=Math.max(1,Math.round(W*sc)),dh=Math.max(1,Math.round(H*sc));
 if(cv.width!==dw||cv.height!==dh){cv.width=dw;cv.height=dh;}
 cv.title="감지 영역 "+W+"×"+H+" → 미리보기 "+dw+"×"+dh+(sc<1?" (1/"+(1/sc).toFixed(1)+" 축소)":"");
 const x=cv.getContext("2d");
+if(p.mode==="img"){renderOneImgLive(p,cv,x,dw,dh,sc,W,H);return;}
 const img=p._img;
 if(!img){x.fillStyle="#000";x.fillRect(0,0,dw,dh);
 x.fillStyle="#888";x.font="12px sans-serif";x.fillText(p.frozen?"고정됨 - 공유 필요":"대기 중",8,20);return;}
@@ -556,6 +828,7 @@ if(bc){const c3=hexRgb(bc);out.data[o]=c3[0];out.data[o+1]=c3[1];out.data[o+2]=c
 else{out.data[o]=rr/n;out.data[o+1]=gg/n;out.data[o+2]=bb/n;}
 out.data[o+3]=255;} // 불투명 치환
 else{out.data[o]=img.data[o];out.data[o+1]=img.data[o+1];out.data[o+2]=img.data[o+2];out.data[o+3]=255;}}
+if(Brush.pid===p.id&&Brush.mask&&Brush.mask.length===W*H){const bc=cols[Brush.hi]||[255,255,255];for(let i=0;i<W*H;i++){const o=i*4;if(Brush.mask[i]){out.data[o]=bc[0];out.data[o+1]=bc[1];out.data[o+2]=bc[2];}else{out.data[o]=img.data[o];out.data[o+1]=img.data[o+1];out.data[o+2]=img.data[o+2];}out.data[o+3]=255;}}
 if(sc>=1){x.putImageData(out,0,0);}
 else{if(!p._pvFull)p._pvFull=document.createElement("canvas");
 if(p._pvFull.width!==W||p._pvFull.height!==H){p._pvFull.width=W;p._pvFull.height=H;}
@@ -573,33 +846,130 @@ hit(p,fx,fy,t){const r=p.roi;
 const L=Math.abs(fx-r.x)<t,R=Math.abs(fx-(r.x+r.w))<t,T=Math.abs(fy-r.y)<t,B=Math.abs(fy-(r.y+r.h))<t;
 if(!(fx>r.x-t&&fx<r.x+r.w+t&&fy>r.y-t&&fy<r.y+r.h+t))return null;
 if(L&&T)return"nw";if(R&&T)return"ne";if(L&&B)return"sw";if(R&&B)return"se";
-if(L)return"w";if(R)return"e";if(T)return"n";if(B)return"s";return null;},
-cursor(h){return{e:"ew-resize",w:"ew-resize",n:"ns-resize",s:"ns-resize",nw:"nwse-resize",se:"nwse-resize",ne:"nesw-resize",sw:"nesw-resize"}[h]||"default";},
+if(L)return"w";if(R)return"e";if(T)return"n";if(B)return"s";
+if(fx>r.x&&fx<r.x+r.w&&fy>r.y&&fy<r.y+r.h)return"move";return null;},
+cursor(h){return{e:"ew-resize",w:"ew-resize",n:"ns-resize",s:"ns-resize",nw:"nwse-resize",se:"nwse-resize",ne:"nesw-resize",sw:"nesw-resize",move:"move"}[h]||"default";},
 down(e){const q=this.pos(e);if(!q)return;const f=this.pick(q.fx,q.fy,q.t);if(!f)return;
-e.preventDefault();this.drag={id:f.p.id,h:f.h,s:{...f.p.roi},moved:false};
+e.preventDefault();this.drag={id:f.p.id,h:f.h,s:{...f.p.roi},sfx:q.fx,sfy:q.fy,moved:false};
 $("originOverlay").style.cursor=this.cursor(f.h);},
 move(e){const c=$("originOverlay");const q=this.pos(e);if(!q)return;
 if(!this.drag){const f=this.pick(q.fx,q.fy,q.t);c.style.cursor=f?this.cursor(f.h):"default";return;}
 const p=presets.find(x=>x.id===this.drag.id);if(!p){this.drag=null;return;}
 const FW=Cap.frameW,FH=Cap.frameH;if(!FW)return;
 let r={...p.roi};const s=this.drag.s,h=this.drag.h;
+if(h==="move"){r.x=s.x+(q.fx-this.drag.sfx);r.y=s.y+(q.fy-this.drag.sfy);r.w=s.w;r.h=s.h;}
+else{
 if(h.includes("e"))r.w=q.fx-r.x;
 if(h.includes("s"))r.h=q.fy-r.y;
 if(h.includes("w")){r.w=(s.x+s.w)-q.fx;r.x=q.fx;}
-if(h.includes("n")){r.h=(s.y+s.h)-q.fy;r.y=q.fy;}
+if(h.includes("n")){r.h=(s.y+s.h)-q.fy;r.y=q.fy;}}
 r.x=clamp(Math.round(r.x),0,FW-1);r.y=clamp(Math.round(r.y),0,FH-1);
 r.w=clamp(Math.round(r.w),1,FW-r.x);r.h=clamp(Math.round(r.h),1,FH-r.y);
 p.roi=r;p.hist=[];p.cont=0;this.drag.moved=true;
 if(p._roiSync){for(const k of["x","y","w","h"])if(p._roiSync[k])p._roiSync[k](r[k]);}
 Preview.renderOrigin();saveSoon();},
 up(){if(this.drag&&this.drag.moved){const p=presets.find(x=>x.id===this.drag.id);
-if(p)Logger.log("DEBUG","ROI","ROI_DRAG","ROI 드래그 변경: "+p.name+" ("+p.roi.x+","+p.roi.y+","+p.roi.w+"×"+p.roi.h+")",{presetId:p.id,presetName:p.name,roi:{...p.roi}});}
+if(p){const mv=this.drag.h==="move"?"ROI 이동":"ROI 크기 변경";
+Logger.log("DEBUG","ROI","ROI_DRAG",mv+": "+p.name+" ("+p.roi.x+","+p.roi.y+","+p.roi.w+"×"+p.roi.h+")",{presetId:p.id,presetName:p.name,roi:{...p.roi}});}}
 this.drag=null;const c=$("originOverlay");if(c)c.style.cursor="default";}};
 (function(){const c=$("originOverlay");
 c.addEventListener("mousedown",e=>RoiDrag.down(e));
 c.addEventListener("mousemove",e=>RoiDrag.move(e));
 c.addEventListener("mouseleave",()=>{if(!RoiDrag.drag)$("originOverlay").style.cursor="default";});
-window.addEventListener("mouseup",()=>RoiDrag.up());})();
+window.addEventListener("mouseup",()=>RoiDrag.up());
+const tpos=t=>({clientX:t.clientX,clientY:t.clientY,preventDefault:()=>{}});
+c.addEventListener("touchstart",e=>{if(e.touches[0]){RoiDrag.down(tpos(e.touches[0]));e.preventDefault();}},{passive:false});
+c.addEventListener("touchmove",e=>{if(e.touches[0]){RoiDrag.move(tpos(e.touches[0]));e.preventDefault();}},{passive:false});
+c.addEventListener("touchend",()=>RoiDrag.up());})();
+/* ============ 색 추출 (클릭 채우기) ============ */
+const Brush={pid:null,hi:0,W:0,H:0,mask:null,seed:null,count:0,btn:null,
+TOL:{H:15,S:0.15,V:0.15},
+srcImg(p){const W=p.roi.w,H=p.roi.h;
+if(p._img&&p._img.width===W&&p._img.height===H)return p._img;
+try{const srcC=(p.frozen&&p.frozenCanvas)?p.frozenCanvas:(Cap.running?Cap.cap:null);
+if(!srcC||!srcC.width)return null;
+return srcC.getContext("2d",{willReadFrequently:true}).getImageData(p.roi.x,p.roi.y,W,H);}catch(e){return null;}},
+start(p,hi,btn){
+if(this.pid===p.id&&this.hi===hi){this.finish(p);return;}
+if(this.pid)this.cancel(true);
+if(ImgCap.pid===p.id){alert("영역 캡처 선택 중에는 색 추출을 할 수 없습니다.");return;}
+const img=this.srcImg(p);
+if(!img){alert("먼저 화면 공유를 시작하거나 현재 화면으로 고정하고, 분석이 1회 돌 때까지 기다리세요.");return;}
+this.pid=p.id;this.hi=hi;this.W=p.roi.w;this.H=p.roi.h;
+this.mask=new Uint8Array(this.W*this.H);
+this.seed=null;this.count=0;
+this.btn=btn||null;
+if(this.btn)this.btn.textContent="추출 완료";
+const cv=$("pv-"+p.id);if(cv)cv.style.cursor="crosshair";
+Preview.renderOne(p);
+Logger.log("INFO","추출","PICK_START","색 추출 시작: "+p.name+" 색상"+(hi+1),{presetId:p.id});},
+fill(p,fx,fy){
+if(p.roi.w!==this.W||p.roi.h!==this.H){alert("감지 영역이 바뀌어 색 추출을 종료합니다.");this.cancel();refreshCardBody(p);return;}
+const img=this.srcImg(p);if(!img)return;
+const d=img.data,W=this.W,H=this.H;
+const sx=clamp(Math.round(fx),0,W-1),sy=clamp(Math.round(fy),0,H-1);
+const so=(sy*W+sx)*4;
+if(!this.seed)this.seed=rgb2hsv(d[so],d[so+1],d[so+2]);
+const TH=Brush.TOL.H,TS=Brush.TOL.S,TV=Brush.TOL.V;
+const diag=p.calcMode!=="c4";
+const seen=new Uint8Array(W*H);const stack=[sy*W+sx];seen[sy*W+sx]=1;
+while(stack.length){const i=stack.pop();
+const o=i*4,ph=rgb2hsv(d[o],d[o+1],d[o+2]);
+if(!this.mask[i]){this.mask[i]=1;this.count++;}
+const x=i%W,y=(i/W)|0;
+for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;if(!diag&&dx&&dy)continue;
+const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=W||ny>=H)continue;const q=ny*W+nx;
+if(seen[q])continue;seen[q]=1;
+const qo=q*4,qh=rgb2hsv(d[qo],d[qo+1],d[qo+2]);
+let dh=Math.abs(qh.h-ph.h);if(dh>180)dh=360-dh;
+if(dh<=TH&&Math.abs(qh.s-ph.s)<=TS&&Math.abs(qh.v-ph.v)<=TV)stack.push(q);}}
+Preview.renderOne(p);},
+down(e,p){const cv=$("pv-"+p.id);if(!cv)return false;
+const q=CapPv.pos(e,p,cv);if(!q)return false;
+if(q.fx<0||q.fy<0||q.fx>=p.roi.w||q.fy>=p.roi.h)return false;
+e.preventDefault();this.fill(p,q.fx,q.fy);return true;},
+move(e,p){const cv=$("pv-"+p.id);if(!cv)return;cv.style.cursor="crosshair";},
+up(){this.drag=false;},
+drop(){this.pid=null;this.mask=null;this.seed=null;this.drag=false;this.btn=null;},
+cancel(silent){const id=this.pid;
+this.pid=null;this.mask=null;this.seed=null;this.drag=false;
+if(this.btn&&this.btn.isConnected)this.btn.textContent="색 추출";
+this.btn=null;
+const p=presets.find(q=>q.id===id);
+if(p&&!silent)Preview.renderOne(p);
+if(!silent&&p)Logger.log("INFO","추출","PICK_CANCEL","색 추출 취소: "+p.name,{presetId:p.id});},
+finish(p){
+if(!this.count){alert("채운 영역이 없습니다. 미리보기를 클릭한 뒤 완료를 누르세요.");return;}
+const hi=this.hi;
+const rg=p.hsv[hi];
+if(!rg){alert("색상 항목을 찾을 수 없습니다.");this.cancel();return;}
+const W=p.roi.w,H=p.roi.h;
+const img=this.srcImg(p);
+if(!img){alert("화면 정보를 읽을 수 없습니다.");return;}
+if(!this.mask||this.mask.length!==W*H){alert("감지 영역이 바뀌어 색 추출을 종료합니다.");this.cancel();refreshCardBody(p);return;}
+let hMin=360,hMax=0,minS=1,maxS=0,minV=1,maxV=0;
+const d=img.data;
+for(let i=0;i<W*H;i++){if(!this.mask[i])continue;
+const o=i*4,{h,s,v}=rgb2hsv(d[o],d[o+1],d[o+2]);
+if(h<hMin)hMin=h;if(h>hMax)hMax=h;
+if(s<minS)minS=s;if(s>maxS)maxS=s;
+if(v<minV)minV=v;if(v>maxV)maxV=v;}
+if(hMax-hMin>180){hMin=0;hMax=360;}
+rg.hMin=clamp(Math.floor(hMin),0,360);rg.hMax=clamp(Math.ceil(hMax),0,360);
+rg.sMin=clamp(Math.floor(minS*100)/100,0,1);rg.sMax=clamp(Math.ceil(maxS*100)/100,0,1);
+rg.vMin=clamp(Math.floor(minV*100)/100,0,1);rg.vMax=clamp(Math.ceil(maxV*100)/100,0,1);
+const union=new Uint8Array(W*H);
+for(let i=0;i<W*H;i++){const o=i*4;const{h,s,v}=rgb2hsv(d[o],d[o+1],d[o+2]);
+if(hsvMatch(h,s,v,rg))union[i]=1;}
+let blob;
+if(p.calcMode==="all"){blob=0;for(let i=0;i<union.length;i++)blob+=union[i];}
+else blob=largestBlob(union,W,H,p.calcMode!=="c4");
+blob=Math.max(1,blob);
+p.thMin=Math.max(0,blob-1);p.thMax=blob+1;
+this.pid=null;this.mask=null;this.seed=null;this.drag=false;this.btn=null;
+saveSoon();refreshCardBody(p);
+Logger.log("INFO","추출","PICK_APPLY","색 추출 적용: "+p.name+" 색상"+(hi+1)+" H "+rg.hMin+"~"+rg.hMax+", 임계 "+p.thMin+"~"+p.thMax,{presetId:p.id});}};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&Brush.pid)Brush.cancel();});
 /* ============ 프리셋 카드 UI ============ */
 function hsvRow(p,h,hi){const d=document.createElement("div");d.className="hsv";
 const chHtml=(ch,title,ext)=>`<div class="ch" data-ch="${ch}"><div class="chHead"><span>${title}</span><span class="mut" data-r="lab"></span></div>
@@ -608,7 +978,7 @@ const chHtml=(ch,title,ext)=>`<div class="ch" data-ch="${ch}"><div class="chHead
 <input type="range" data-r="hi" min="0" max="${ch==="h"?360:100}" step="1" aria-label="${title} 최대"></div>
 <div class="chnum"><label>최소 <input type="number" data-r="loN" ${ext}></label><label>최대 <input type="number" data-r="hiN" ${ext}></label></div></div>`;
 d.innerHTML=`<div class="hsvHead"><span class="swatch" data-a="color" title="클릭하면 색상 변경" style="background:${h.color||maskColor(hi)};cursor:pointer"></span>
-<b>감지 색상</b><button class="mini" data-a="addHsv">색상 추가</button><button class="mini danger" data-a="delHsv">삭제</button></div>
+<b>감지 색상</b><button class="mini" data-a="brush">색 추출</button><span style="flex:1"></span><button class="mini danger" data-a="delHsv">삭제</button></div>
 ${chHtml("h","H 색상각도","min='0' max='360' step='1'")}
 ${chHtml("s","S 채도","min='0' max='100' step='1'")}
 ${chHtml("v","V 명도","min='0' max='100' step='1'")}`;
@@ -641,9 +1011,13 @@ loN.onchange=()=>{apply("lo",loN.value);sync();saveSoon();log();};
 hiN.onchange=()=>{apply("hi",hiN.value);sync();saveSoon();log();};
 sync();});
 d.querySelector('[data-a="color"]').onclick=()=>{h.color="hsl("+((Math.random()*360)|0)+",90%,55%)";d.querySelector(".swatch").style.background=h.color;saveSoon();};
-d.querySelector('[data-a="addHsv"]').onclick=()=>{p.hsv.push({hMin:0,hMax:360,sMin:0,sMax:1,vMin:0,vMax:1,color:maskColor(p.hsv.length)});saveSoon();buildCards(false);};
 d.querySelector('[data-a="delHsv"]').onclick=()=>{if(p.hsv.length<=1){alert("감지 색상은 1개 이상 필요합니다.");return;}
-p.hsv.splice(hi,1);saveSoon();buildCards(false);Logger.log("INFO","HSV","HSV_DELETE","HSV 삭제: "+p.name,{presetId:p.id});};
+p.hsv.splice(hi,1);saveSoon();refreshCardBody(p);Logger.log("INFO","HSV","HSV_DELETE","HSV 삭제: "+p.name,{presetId:p.id});};
+d.querySelector('[data-a="brush"]').onclick=ev=>{Brush.start(p,hi,ev.target);};
+return d;}
+function addHsvCard(p){const d=document.createElement("div");d.className="hsv addHsvCard";
+d.innerHTML='<div class="addPlus" style="font-size:32px">+</div><div class="mut">색상 추가</div>';
+d.onclick=()=>{p.hsv.push({hMin:0,hMax:360,sMin:0,sMax:1,vMin:0,vMax:1,color:maskColor(p.hsv.length)});saveSoon();refreshCardBody(p);};
 return d;}
 function roiRow(p,key,label,maxV){const w=document.createElement("div");w.className="roiRow";
 w.innerHTML=`<label>${label}</label><input type="number" value="${p.roi[key]}" step="1"><input type="range" min="0" max="${maxV}" value="${p.roi[key]}" step="1"><button class="mini" data-d="-1">-1</button><button class="mini" data-d="1">+1</button>`;
@@ -661,64 +1035,84 @@ return w;}
 function etcCard(p){const e=document.createElement("div");e.className="hsv";
 e.innerHTML=`<b>기타설정</b>
 <h3>감지조건</h3>
-<div class="kv"><label class="mut">1. 평균 계산 틱</label><input type="number" data-f="avgTicks" value="${p.avgTicks}" min="1" max="60" style="width:70px"></div>
-<div class="kv"><label class="mut">2. 임계값 범위</label><input type="number" data-f="thMin" value="${p.thMin}" style="width:68px"> ~ <input type="number" data-f="thMax" value="${p.thMax}" style="width:68px"></div>
-<div class="kv"><label class="mut">3. 연속 감지 틱</label><input type="number" data-f="contTicks" value="${p.contTicks}" min="1" max="60" style="width:70px"></div>
-<div class="kv"><label class="mut">4. 감지 후 알람 지연(초)</label><input type="number" data-f="alarmDelay" value="${p.alarmDelay||0}" min="0" max="120" step="1" style="width:70px"></div>
-<div class="kv"><label class="mut">5. 계산 방식</label><select data-f="calcMode"><option value="c4">군집(위아래방향만)</option><option value="c8">군집(대각선방향포함)</option><option value="all">전체픽셀</option></select></div>
-<h3>알람 (Web Audio)</h3>
-<div class="kv"><label class="mut">알람 모드</label><select data-f="alarmEdge"><option value="on">ON 전환시</option><option value="off">OFF 전환시</option><option value="both">ON OFF 둘다</option><option value="none">끄기</option></select>
+<div class="kv"><label class="mut">1. 평균 횟수 (최근 N회)</label><input type="number" data-f="avgTicks" value="${p.avgTicks}" min="1" max="60" style="width:70px"></div>
+<div class="kv" data-k="th"><label class="mut">2. 감지 크기 범위 (픽셀 수)</label><input type="number" data-f="thMin" value="${p.thMin}" style="width:68px"> ~ <input type="number" data-f="thMax" value="${p.thMax}" style="width:68px"></div>
+<div class="kv"><label class="mut">3. 연속 감지 횟수</label><input type="number" data-f="contTicks" value="${p.contTicks}" min="1" max="60" style="width:70px"></div>
+<div class="kv"><label class="mut">4. 알람 대기 시간 (초)</label><input type="number" data-f="alarmDelay" value="${p.alarmDelay||0}" min="0" max="120" step="1" style="width:70px"></div>
+<div class="kv" data-k="calc"><label class="mut">5. 크기 계산 방식</label><select data-f="calcMode"><option value="c4">덩어리(상하좌우만)</option><option value="c8">덩어리(대각선 포함)</option><option value="all">흩어진 픽셀 전부 합산</option></select></div>
+<h3>알람</h3>
+<div class="kv"><label class="mut">울릴 때</label><select data-f="alarmEdge"><option value="on">감지 시작할 때</option><option value="off">감지 끝날 때</option><option value="both">시작·끝 둘 다</option><option value="none">끄기</option></select>
 <select data-f="alarmType">${Array.from({length:10},(_,i)=>`<option value="${i+1}">알람 ${i+1}</option>`).join("")}</select></div>`;
 e.querySelector('[data-f="alarmEdge"]').value=p.alarmEdge;e.querySelector('[data-f="alarmType"]').value=p.alarmType;e.querySelector('[data-f="calcMode"]').value=p.calcMode||"c8";
+if(p.mode==="img"){const th=e.querySelector('[data-k="th"]');if(th)th.style.display="none";const cm=e.querySelector('[data-k="calc"]');if(cm)cm.style.display="none";}
 [["avgTicks",1,60],["thMin",0,999999],["thMax",0,999999],["contTicks",1,60],["alarmDelay",0,120]].forEach(([f,mn,mx])=>{
 e.querySelector(`[data-f="${f}"]`).onchange=ev=>{p[f]=clamp(+ev.target.value||0,mn,mx);ev.target.value=p[f];saveSoon();updatePresetStats(p);};});
 e.querySelector('[data-f="alarmEdge"]').onchange=ev=>{p.alarmEdge=ev.target.value;saveSoon();};
 e.querySelector('[data-f="alarmType"]').onchange=ev=>{p.alarmType=+ev.target.value;saveSoon();Alarm.play(p.alarmType);};
 e.querySelector('[data-f="calcMode"]').onchange=ev=>{p.calcMode=ev.target.value;saveSoon();p.hist=[];p.cont=0;updatePresetStats(p);};
 return e;}
-function buildCards(rebuild=true){const box=$("cards");box.innerHTML="";
+function buildCards(rebuild=true){if(typeof Brush!=="undefined"&&Brush.pid)Brush.drop();const box=$("cards");box.innerHTML="";
 for(const p of presets){const c=document.createElement("div");c.className="card"+(p.frozen?" frozen":"");c.id="card-"+p.id;
 const fw=Cap.frameW||1920,fh=Cap.frameH||1080;
 c.innerHTML=`<div class="cardHead"><input type="text" value="${p.name.replace(/"/g,"&quot;")}" data-f="name">
 <span class="badge ${p.state}">${p.state}</span>${p.frozen?'<span class="badge off">고정됨</span>':""}
 <button class="mini tgl ${p.enabled?"on":"off"}" data-f="tglen">${p.enabled?"활성화":"비활성화"}</button><button class="mini danger" data-a="delPreset">삭제</button></div>
 <div class="stat"><span>현재 <b data-s="cur">${p.cur}</b></span><span>평균 <b data-s="avg">${p.avg}</b></span><span>연속 <b data-s="cont">${p.cont}/${p.contTicks}</b></span></div>
-<div class="row" style="margin:6px 0"><button class="mini" data-a="freeze">${p.frozen?"고정 해제":"화면 고정"}</button>
-<button class="mini" data-a="export">감지 카드 내보내기</button><button class="mini" data-a="blend">겹침색 변경</button><span data-r="bsw"></span></div>
+<div class="row" style="margin:6px 0"><span class="modeSeg"><button class="mini${p.mode==="img"?" on":""}" data-f="modeImg">이미지 인식</button><button class="mini${p.mode==="img"?"":" on"}" data-f="modeHsv">색상 인식</button></span><button class="mini" data-a="freeze">${p.frozen?"고정 풀기":"현재 화면 고정"}</button>
+<button class="mini" data-a="export">카드 설정 복사</button><button class="mini" data-a="import">카드 설정 가져오기</button><button class="mini" data-a="blend" style="${p.mode==="img"?"display:none":""}">겹침 표시색 변경</button></div>
 <h3>감지 영역 (원본 화면 기준 X, Y, 너비, 높이)</h3><div class="roi2col"><div data-r="roiL"></div><div data-r="roiR"></div></div>
 <canvas class="pv" id="pv-${p.id}"></canvas>
 <div class="setGrid" data-r="setgrid"></div>
 `;
 c.querySelector('[data-f="name"]').onchange=e=>{p.name=e.target.value||p.name;saveSoon();};
 const tg=c.querySelector('[data-f="tglen"]');
-tg.onclick=()=>{p.enabled=!p.enabled;tg.className="mini tgl "+(p.enabled?"on":"off");tg.textContent=p.enabled?"활성화":"비활성화";saveSoon();};
+tg.onclick=()=>{p.enabled=!p.enabled;tg.className="mini tgl "+(p.enabled?"on":"off");tg.textContent=p.enabled?"활성화":"비활성화";if(!p.enabled){Alarm.stopRepeat(p.id);Alarm.clearDelay(p.id);}saveSoon();};
+c.querySelector('[data-f="modeHsv"]').onclick=()=>setMode(p,"hsv");
+c.querySelector('[data-f="modeImg"]').onclick=()=>setMode(p,"img");
 const rl=c.querySelector('[data-r="roiL"]'),rr=c.querySelector('[data-r="roiR"]');
 rl.append(roiRow(p,"x","X",fw),roiRow(p,"y","Y",fh));
 rr.append(roiRow(p,"w","W",fw),roiRow(p,"h","H",fh));
 const sg=c.querySelector('[data-r="setgrid"]');
+const pv=c.querySelector("#pv-"+p.id);
+if(pv){pv.style.touchAction="none";
+pv.onpointerdown=e=>CapPv.down(e,p);
+pv.onpointermove=e=>CapPv.move(e,p);
+pv.onpointerup=()=>CapPv.up();
+pv.onpointerleave=()=>{if(!CapPv.drag)pv.style.cursor="default";}}
 sg.append(etcCard(p));
-p.hsv.forEach((h,i)=>sg.append(hsvRow(p,h,i)));
+if(p.mode==="img")sg.append(imgPanel(p));
+else{p.hsv.forEach((h,i)=>sg.append(hsvRow(p,h,i)));sg.append(addHsvCard(p));}
 c.querySelector('[data-a="freeze"]').onclick=()=>toggleFreeze(p);
 c.querySelector('[data-a="export"]').onclick=()=>exportPreset(p);
+c.querySelector('[data-a="import"]').onclick=()=>importPresetInto(p);
 c.querySelector('[data-a="delPreset"]').onclick=()=>{if(!confirm("삭제할까요?"))return;
-presets=presets.filter(q=>q!==p);Alarm.stopRepeat(p.id);Alarm.clearDelay(p.id);saveSoon();buildCards(false);};
-const paintBlend=pp=>{const s=c.querySelector('[data-r="bsw"]');if(!s)return;
-if(pp.blendColors)s.innerHTML=pp.blendColors.map((cc,k)=>`<span class="swatch" style="background:${cc};width:16px;height:16px" title="${k>=2?"4+":k+2}개 겹침"></span>`).join("");
-else s.innerHTML='<span class="mut">겹침 자동혼합</span>';};
+ImgWorker.clear(p.id);presets=presets.filter(q=>q!==p);Alarm.stopRepeat(p.id);Alarm.clearDelay(p.id);saveSoon();buildCards(false);};
 c.querySelector('[data-a="blend"]').onclick=()=>{const rc=()=>"#"+((Math.random()*0xffffff)|0).toString(16).padStart(6,"0");
-p.blendColors=[rc(),rc(),rc()];saveSoon();paintBlend(p);
-Logger.log("INFO","HSV","BLEND_COLOR","겹침색 변경(2·3·4+ 랜덤): "+p.name,{presetId:p.id,presetName:p.name});};
-paintBlend(p);
+p.blendColors=[rc(),rc(),rc()];saveSoon();
+Logger.log("INFO","HSV","BLEND_COLOR","겹침 표시색 변경(2·3·4+ 랜덤): "+p.name,{presetId:p.id,presetName:p.name});};
 if(Alarm.repeatTimers[p.id])c.classList.add("alarming");
 box.appendChild(c);}
 const add=document.createElement("div");add.className="card addCard";
 add.innerHTML='<div class="addPlus">+</div><div class="mut">감지 카드 추가</div>';
-add.onclick=()=>addPreset();box.appendChild(add);}
+add.onclick=()=>addPreset();box.appendChild(add);
+Preview.renderAll();}
 function refreshPresetCard(p){const c=$("card-"+p.id);if(!c){buildCards(false);return;}
 const badge=c.querySelector(".badge");if(badge){badge.textContent=p.state;badge.className="badge "+p.state;}updatePresetStats(p);}
+function refreshCardBody(p){if(Brush.pid===p.id)Brush.drop();const c=$("card-"+p.id);if(!c){buildCards(false);return;}
+const sg=c.querySelector('[data-r="setgrid"]');if(!sg){buildCards(false);return;}
+sg.innerHTML="";sg.append(etcCard(p));
+if(p.mode==="img")sg.append(imgPanel(p));
+else{p.hsv.forEach((h,i)=>sg.append(hsvRow(p,h,i)));sg.append(addHsvCard(p));}
+const bb=c.querySelector('[data-a="blend"]');if(bb)bb.style.display=p.mode==="img"?"none":"";
+const bImg=c.querySelector('[data-f="modeImg"]');if(bImg)bImg.className="mini"+(p.mode==="img"?" on":"");
+const bHsv=c.querySelector('[data-f="modeHsv"]');if(bHsv)bHsv.className="mini"+(p.mode==="img"?"":" on");
+updatePresetStats(p);Preview.renderOne(p);}
 function updatePresetStats(p){const c=$("card-"+p.id);if(!c)return;
-const q=s=>c.querySelector(`[data-s="${s}"]`);if(q("cur"))q("cur").textContent=p.cur;
-if(q("avg"))q("avg").textContent=p.avg;if(q("cont"))q("cont").textContent=p.cont+"/"+p.contTicks;
+const q=s=>c.querySelector(`[data-s="${s}"]`);const pct=p.mode==="img"?"%":"";
+if(q("cur"))q("cur").textContent=p.cur+pct;
+if(q("avg"))q("avg").textContent=p.avg+pct;if(q("cont"))q("cont").textContent=p.cont+"/"+p.contTicks;
+if(p.mode==="img"){const pk=c.querySelector('[data-r="peak"]');if(pk)pk.textContent=(p.peak||0)+"%";
+const rc=c.querySelector('[data-r="rec"]');if(rc)rc.textContent=(p.peak||0)>=52?clamp(Math.round(p.peak)-2,50,100)+"%":"-";}
 const b=c.querySelector(".badge");if(b){b.textContent=p.state;b.className="badge "+p.state;}}
 function scrollToPreset(id){requestAnimationFrame(()=>{const c=$("card-"+id);if(c)c.scrollIntoView({behavior:"smooth",block:"start"});});}
 function addPreset(){const p=defaultPreset();presets.push(p);saveSoon();buildCards(false);scrollToPreset(p.id);
@@ -727,44 +1121,57 @@ Logger.log("INFO","감지 카드","PRESET_CREATE","감지 카드 생성: "+p.nam
 function toggleFreeze(p){if(!p.frozen){if(!Cap.running||!Cap.frameW){alert("먼저 화면 공유를 시작하세요.");return;}
 const fc=document.createElement("canvas");fc.width=Cap.frameW;fc.height=Cap.frameH;
 fc.getContext("2d").drawImage(Cap.cap,0,0);p.frozenCanvas=fc;p.frozen=true;
-Logger.log("INFO","캡처","FRAME_FROZEN","화면 고정: "+p.name,{presetId:p.id,presetName:p.name,frame:{width:fc.width,height:fc.height}});}
-else{p.frozen=false;p.frozenCanvas=null;Logger.log("INFO","캡처","FRAME_UNFROZEN","고정 해제: "+p.name,{presetId:p.id});}
+Logger.log("INFO","캡처","FRAME_FROZEN","현재 화면 고정: "+p.name,{presetId:p.id,presetName:p.name,frame:{width:fc.width,height:fc.height}});}
+else{p.frozen=false;p.frozenCanvas=null;Logger.log("INFO","캡처","FRAME_UNFROZEN","고정 풀기: "+p.name,{presetId:p.id});}
 saveSoon();buildCards(false);}
 /* ============ 내보내기/가져오기 다이얼로그 ============ */
 let dlgMode=null,dlgTarget=null;
 function openDlg(title,text,preset,forSave){$("dlgTitle").textContent=title;$("dlgText").value=text||"";$("dlgMsg").textContent="";$("dlg").showModal();}
 function exportPreset(p){const t=JSON.stringify(serializePreset(p),null,2);
-copyText(t).then(ok=>{if(ok){alert("감지 카드가 복사되었습니다.");}
-else{openDlg("감지 카드 내보내기 — "+p.name,t);$("dlgOk").style.display="none";$("dlgCopy").style.display="";$("dlgMsg").textContent="복사 실패: 텍스트를 직접 선택해 복사하세요.";$("dlgText").select();}});
+copyText(t).then(ok=>{if(ok){alert("카드 설정이 복사되었습니다.");}
+else{openDlg("카드 설정 복사 — "+p.name,t);$("dlgOk").style.display="none";$("dlgCopy").style.display="";$("dlgMsg").textContent="복사 실패: 텍스트를 직접 선택해 복사하세요.";$("dlgText").select();}});
 Logger.log("INFO","저장","PRESET_EXPORT","프리셋 내보내기: "+p.name,{presetId:p.id});}
 async function copyText(t){try{await navigator.clipboard.writeText(t);return true;}catch(e){return false;}}
-$("dlgCopy").onclick=()=>copyText($("dlgText").value).then(ok=>{$("dlgMsg").textContent=ok?"감지 카드가 복사되었습니다.":"복사 실패: 직접 선택해 복사하세요.";});
+function importPresetInto(p){dlgMode="importPresetInto";dlgTarget=p.id;
+$("dlgOk").style.display="";openDlg("카드 설정 가져오기 — "+p.name,"");$("dlgText").value="";
+$("dlgMsg").textContent="내보낸 카드 설정 텍스트를 붙여넣고 저장을 누르세요. 이 카드의 설정만 교체됩니다.";}
+$("dlgCopy").onclick=()=>copyText($("dlgText").value).then(ok=>{$("dlgMsg").textContent=ok?"카드 설정이 복사되었습니다.":"복사 실패: 직접 선택해 복사하세요.";});
 $("dlgClose").onclick=()=>{$("dlg").close();$("dlgOk").style.display="";};
 $("dlgOk").onclick=()=>{const t=$("dlgText").value;
 try{if(dlgMode==="importPreset"){const o=JSON.parse(t);
 const errs=validatePresetObj(o);if(errs.length)throw new Error(errs.join("; "));
-const n=presetFromObj(o);presets.push(n);saveSoon();buildCards(false);$("dlg").close();alert("감지 카드를 가져왔습니다: "+n.name);scrollToPreset(n.id);
+const n=presetFromObj(o);presets.push(n);bootImgTemplates([n]);saveSoon();buildCards(false);$("dlg").close();alert("카드 설정을 가져왔습니다: "+n.name);scrollToPreset(n.id);
 Logger.log("INFO","저장","PRESET_IMPORT","프리셋 가져오기 성공: "+n.name,{presetName:n.name});}
+else if(dlgMode==="importPresetInto"){const o=JSON.parse(t);
+const errs=validatePresetObj(o);if(errs.length)throw new Error(errs.join("; "));
+const n=presetFromObj(o);const idx=presets.findIndex(q=>q.id===dlgTarget);
+if(idx<0)throw new Error("대상 카드를 찾을 수 없음");
+const old=presets[idx];n.id=old.id;n.frozen=old.frozen;n.frozenCanvas=old.frozenCanvas;
+presets[idx]=n;if(ImgCap.pid===n.id)ImgCap.clear();
+ImgWorker.clear(n.id);bootImgTemplates([n]);
+saveSoon();buildCards(false);$("dlg").close();alert("카드 설정을 가져왔습니다: "+n.name);scrollToPreset(n.id);
+Logger.log("INFO","저장","PRESET_IMPORT_INTO","카드 설정 교체: "+n.name,{presetName:n.name});}
 else if(dlgMode==="importAll"){const o=JSON.parse(t);
-if(o.v!==SCHEMA||!Array.isArray(o.presets))throw new Error("전체 설정 형식 오류 (v="+o.v+")");
+if((o.v!==1&&o.v!==SCHEMA)||!Array.isArray(o.presets))throw new Error("전체 설정 형식 오류 (v="+o.v+")");
 const list=o.presets.map(q=>{const e=validatePresetObj({kind:"preset",preset:q});if(e.length)throw new Error("감지 카드 오류: "+e.join("; "));return presetFromObj({kind:"preset",preset:q});});
 const mode=document.querySelector('input[name="impMode"]:checked')?.value||"replace";
 if(mode==="replace"){presets=list;common.interval=clamp(+o.common?.interval||500,50,10000);$("inInterval").value=common.interval;common.uiScale=clamp(+o.common?.uiScale||1,0.5,1.5);}
 else presets.push(...list);
+bootImgTemplates(list);
 saveSoon();buildCards(false);$("dlg").close();alert("전체 설정을 가져왔습니다 ("+list.length+"개)");if(list.length)scrollToPreset(list[0].id);
 Logger.log("INFO","저장","CONFIG_IMPORT","전체 설정 가져오기 성공",{settings:{count:list.length,mode}});}}
 catch(e){$("dlgMsg").textContent="가져오기 실패: "+e.message+" (기존 설정 유지)";
 Logger.log("ERROR","저장","IMPORT_VALIDATE_FAIL","가져오기 검증 실패",{actual:String(e&&e.message),suggestedAction:"내보낸 텍스트 원본을 그대로 붙여넣기"});}};
 // 프리셋 가져오기 메뉴(별도): 헤더에 버튼 동적 추가
-(function(){const b=document.createElement("button");b.textContent="감지 카드 가져오기";b.onclick=()=>{
-dlgMode="importPreset";$("dlgOk").style.display="";openDlg("감지 카드 가져오기","");$("dlgText").value="";$("dlgMsg").textContent="내보낸 감지 카드 텍스트를 붙여넣고 저장을 누르세요.";};
+(function(){const b=document.createElement("button");b.textContent="카드 설정 가져오기";b.onclick=()=>{
+dlgMode="importPreset";$("dlgOk").style.display="";openDlg("카드 설정 가져오기","");$("dlgText").value="";$("dlgMsg").textContent="내보낸 카드 설정 텍스트를 붙여넣고 저장을 누르세요.";};
 $("btnExportAll").parentNode.insertBefore(b,$("btnExportAll"));})();
 $("btnExportAll").onclick=()=>{const t=JSON.stringify({v:SCHEMA,common,presets:presets.map(p=>serializePreset(p).preset)},null,2);
 copyText(t).then(ok=>{if(ok){alert("전체 설정이 복사되었습니다.");}
-else{openDlg("전체 설정 내보내기",t);$("dlgOk").style.display="none";$("dlgCopy").style.display="";$("dlgMsg").textContent="복사 실패: 직접 선택해 복사하세요.";$("dlgText").select();}});
-Logger.log("INFO","저장","CONFIG_EXPORT","전체 설정 내보내기",{});};
+else{openDlg("전체 설정 복사",t);$("dlgOk").style.display="none";$("dlgCopy").style.display="";$("dlgMsg").textContent="복사 실패: 직접 선택해 복사하세요.";$("dlgText").select();}});
+Logger.log("INFO","저장","CONFIG_EXPORT","전체 설정 복사",{});};
 $("btnImportAll").onclick=()=>{dlgMode="importAll";$("dlgOk").style.display="";openDlg("전체 설정 가져오기","");
-$("dlgText").value="";$("dlgMsg").innerHTML='붙여넣고 저장. <label><input type="radio" name="impMode" value="replace" checked> 전체 교체</label> <label><input type="radio" name="impMode" value="add"> 감지 카드만 추가</label>';};
+$("dlgText").value="";$("dlgMsg").innerHTML='붙여넣고 저장. <label><input type="radio" name="impMode" value="replace" checked> 전체 교체</label> <label><input type="radio" name="impMode" value="add"> 카드 설정만 추가</label>';};
 $("btnResetAll").onclick=()=>{if(!confirm("공통 설정과 모든 감지 카드를 초기화할까요?"))return;
 presets=[];common.interval=500;$("inInterval").value=500;common.pvMax=320;$("inPvMax").value=320;common.uiScale=1;saveSoon();buildCards(false);
 Logger.log("WARN","저장","CONFIG_RESET","전체 초기화 실행",{});};
